@@ -29,24 +29,40 @@ simpl (x :> Eps) = simpl x
 simpl (Eps :> x) = simpl x
 simpl ((x :> y) :> z) = simpl (x :> (y :> z))
 simpl (x :> y) = simpl x :> simpl y
+
 simpl (Empty :| x) = simpl x
 simpl (x :| Empty) = simpl x
 simpl (Eps :| x) = case nullable x of
                      True -> (simpl x)
                      False -> (Eps :| (simpl x))
 simpl (x :| Eps) = simpl (Eps :| x)
-simpl (x :| (y :| z)) = if x === z then
-                         simpl (x :| y)
-                       else if x === y then
-                         simpl (x :| z)
-                       else
-                         simpl x :| simpl (y :| z)
-simpl ((x :| y) :| z) = simpl (x :| (y :| z))
+
+simpl (x :| y) = let f = toList (x :| y) [] in
+                     listToReg f
+
 simpl (Many x) = case x of
                    Empty -> Eps
                    Eps -> Eps
                    x -> Many (simpl x)
 simpl x = x
+
+listNullable :: [Reg c] -> Bool
+listNullable [] = False
+listNullable (h:t) = if nullable h then True else listNullable t
+
+toList :: Eq c => Reg c -> [Reg c] -> [Reg c]
+toList (x :| y) acc = let ac = toList x acc in
+                        toList y ac
+toList Empty acc = acc
+toList Eps acc = if listNullable acc then acc else [Eps] ++ acc
+toList x acc = let xs = simpl x in
+                 if xs `elem` acc then acc
+                 else acc ++ [xs]
+
+listToReg :: [Reg c] -> Reg c
+listToReg (h:t) = foldl f h t
+        where f :: Reg c -> Reg c -> Reg c
+              f r a = r :| a
 
 nullable :: Reg c -> Bool
 nullable Eps = True
@@ -72,7 +88,7 @@ der c _ = Empty
 
 ders :: Eq c => [c] -> Reg c -> Reg c
 ders w r = foldl f r w
-          where f :: Eq c => Reg c -> c -> Reg c 
+          where f :: Eq c => Reg c -> c -> Reg c
                 f r x = simpl $ der x r
 
 accepts :: Eq c => Reg c -> [c] -> Bool
