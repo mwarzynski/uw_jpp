@@ -34,44 +34,28 @@ instance (Eq c) => Equiv (Reg c) where
 instance Mon (Reg c) where
   m1 = Eps
   x <> y = x :> y
-  
+
 simpl :: Eq c => Reg c -> Reg c
 
-simpl (Empty :> r) = Empty
-simpl (r :> Empty) = Empty
-simpl (r :> Eps) = simpl r
-simpl (Eps :> r) = simpl r
-
-simpl (x :> (y :> z)) = simpl x :> simpl y :> simpl z
+simpl (Empty :> _) = Empty
+simpl (_ :> Empty) = Empty
+simpl (x :> Eps) = simpl x
+simpl (Eps :> x) = simpl x
 simpl ((x :> y) :> z) = simpl (x :> (y :> z))
 simpl (x :> y) = simpl x :> simpl y
-
-simpl (Empty :| r) = simpl r
-simpl (r :| Empty) = simpl r
-
-simpl (Eps :| r) = case nullable r of
-                     True -> (simpl r)
-                     False -> (Eps :| (simpl r))
-simpl (r :| Eps) = simpl (Eps :| r)
-
-simpl (x :| (y :| z)) = if x === z then
-                          simpl (x :| y)
-                        else if x === y then
-                          simpl (x :| z)
-                        else
-                          simpl x :| simpl y :| simpl z
+simpl (Empty :| x) = simpl x
+simpl (x :| Empty) = simpl x
+simpl (Eps :| x) = case nullable x of
+                     True -> (simpl x)
+                     False -> (Eps :| (simpl x))
+simpl (x :| Eps) = simpl (Eps :| x)
 simpl ((x :| y) :| z) = simpl (x :| (y :| z))
-simpl (x :| y) = if x === y then
-                   simpl x
-                 else
-                   simpl x :| simpl y
-
-simpl (Many r) = case r of
+simpl (x :| y) = simpl x :| simpl y
+simpl (Many x) = case x of
                    Empty -> Eps
                    Eps -> Eps
-                   r -> Many (simpl r)
-
-simpl r = r
+                   x -> Many (simpl x)
+simpl x = x
 
 nullable :: Reg c -> Bool
 nullable Empty = False
