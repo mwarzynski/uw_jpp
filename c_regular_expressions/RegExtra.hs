@@ -60,6 +60,7 @@ toList x acc = let xs = simpl x in
                  else acc ++ [xs]
 
 listToReg :: [Reg c] -> Reg c
+listToReg [] = Eps
 listToReg (h:t) = foldl f h t
         where f :: Reg c -> Reg c -> Reg c
               f r a = r :| a
@@ -92,8 +93,9 @@ ders w r = foldl f r w
                 f r x = simpl $ der x r
 
 accepts :: Eq c => Reg c -> [c] -> Bool
-accepts r [] = nullable r
-accepts r (h:t) = accepts (der h r) t
+accepts r w = acceptsh (simpl r) w
+acceptsh r [] = nullable r
+acceptsh r (h:t) = accepts (der h r) t
 
 mayStart :: Eq c => c -> Reg c -> Bool
 mayStart c r = if der c r === Empty then False else True
