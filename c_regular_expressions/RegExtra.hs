@@ -35,6 +35,12 @@ simpl (Eps :| x) = case nullable x of
                      True -> (simpl x)
                      False -> (Eps :| (simpl x))
 simpl (x :| Eps) = simpl (Eps :| x)
+simpl (x :| (y :| z)) = if x === z then
+                         simpl (x :| y)
+                       else if x === y then
+                         simpl (x :| z)
+                       else
+                         simpl x :| simpl (y :| z)
 simpl ((x :| y) :| z) = simpl (x :| (y :| z))
 simpl (Many x) = case x of
                    Empty -> Eps
@@ -67,7 +73,7 @@ der c _ = Empty
 ders :: Eq c => [c] -> Reg c -> Reg c
 ders w r = foldl f r w
           where f :: Eq c => Reg c -> c -> Reg c 
-                f r x = der x r
+                f r x = simpl $ der x r
 
 accepts :: Eq c => Reg c -> [c] -> Bool
 accepts r [] = nullable r
