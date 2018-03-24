@@ -9,7 +9,6 @@ data Reg c
   = Lit c           -- one character
   | Reg c :> Reg c  -- concatenation
   | Reg c :| Reg c  -- alternative (sum)
-
   | Many (Reg c)    -- star
   | Eps             -- empty word
   | Empty           -- empty language
