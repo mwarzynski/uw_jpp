@@ -23,7 +23,6 @@ instance Mon (Reg c) where
   x <> y = x :> y
 
 simpl :: Eq c => Reg c -> Reg c
-
 simpl (Empty :> _) = Empty
 simpl (_ :> Empty) = Empty
 simpl (x :> Eps) = simpl x
@@ -37,11 +36,6 @@ simpl (Eps :| x) = case nullable x of
                      False -> (Eps :| (simpl x))
 simpl (x :| Eps) = simpl (Eps :| x)
 simpl ((x :| y) :| z) = simpl (x :| (y :| z))
-simpl ((Lit x) :| (Lit y)) = if x == y then
-                               Lit x
-                             else
-                               Lit x :| Lit y
-simpl (x :| y) = simpl x :| simpl y
 simpl (Many x) = case x of
                    Empty -> Eps
                    Eps -> Eps
@@ -49,31 +43,38 @@ simpl (Many x) = case x of
 simpl x = x
 
 nullable :: Reg c -> Bool
-nullable Empty = False
 nullable Eps = True
-nullable (Lit c) = False
-nullable (Many r) = True
+nullable (Many _) = True
 nullable (r1 :> r2) = nullable r1 && nullable r2
 nullable (r1 :| r2) = nullable r1 || nullable r2
+nullable _ = False
 
-empty :: Eq c => Reg c -> Bool 
+empty :: Eq c => Reg c -> Bool
 empty Empty = True
 empty (r1 :> r2) = (empty r1) || (empty r2)
 empty (r1 :| r2) = (empty r1) && (empty r2)
 empty _ = False
 
 der :: Eq c => c -> Reg c -> Reg c
-der c r = (Lit c :> r)
+der c (Lit r) = if c == r then Eps else Empty
+der c (x :| y) = (der c x) :| (der c y)
+der c (x :> y) = case nullable x of
+                   True -> ((der c x) :> y) :| (der c y)
+                   False -> (der c x) :> y
+der c (Many x) = (der c x) :> Many x
+der c _ = Empty
 
 ders :: Eq c => [c] -> Reg c -> Reg c
-ders [] r = r
-ders (h:t) r = (Lit h) :> ders t r
+ders w r = foldl f r w
+          where f :: Eq c => Reg c -> c -> Reg c 
+                f r x = der x r
 
 accepts :: Eq c => Reg c -> [c] -> Bool
-accepts r w = False
+accepts r [] = nullable r
+accepts r (h:t) = accepts (der h r) t
 
 mayStart :: Eq c => c -> Reg c -> Bool
-mayStart c r = False
+mayStart c r = if der c r === Empty then False else True
 
 match :: Eq c => Reg c -> [c] -> Maybe [c]
 match r w = Nothing
