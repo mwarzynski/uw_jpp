@@ -37,7 +37,7 @@ simpl (Eps :| x) = case nullable x of
                      False -> (Eps :| (simpl x))
 simpl (x :| Eps) = simpl (Eps :| x)
 
-simpl (x :| y) = let f = toList (x :| y) [] in
+simpl (x :| y) = let f = regToList (x :| y) [] in
                      listToReg f
 
 simpl (Many x) = case x of
@@ -50,12 +50,12 @@ listNullable :: [Reg c] -> Bool
 listNullable [] = False
 listNullable (h:t) = if nullable h then True else listNullable t
 
-toList :: Eq c => Reg c -> [Reg c] -> [Reg c]
-toList (x :| y) acc = let ac = toList x acc in
-                        toList y ac
-toList Empty acc = acc
-toList Eps acc = if listNullable acc then acc else [Eps] ++ acc
-toList x acc = let xs = simpl x in
+regToList :: Eq c => Reg c -> [Reg c] -> [Reg c]
+regToList (x :| y) acc = let ac = regToList x acc in
+                        regToList y ac
+regToList Empty acc = acc
+regToList Eps acc = if listNullable acc then acc else [Eps] ++ acc
+regToList x acc = let xs = simpl x in
                  if xs `elem` acc then acc
                  else acc ++ [xs]
 
