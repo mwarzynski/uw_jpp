@@ -4,19 +4,6 @@
 -- Mateusz Warzyński (371854) <m.warzynski@students.uw.edu.pl>
 --
 
--- Rozwiązania mają być samodzielne. Wszelkie zapożyczenia z internetu itp.
---    należy wyrażnie zaznaczyć.
--- Należy oddać wyłącznie plik RegExtra.hs. Nie może on importować nic ponadto
---    co jest już importowane w RegExtra0.hs
--- Rozwiązania będą oceniane pod kątem:
---    - spełnienia warunków zadania; rozwiązania nie przechodzące testów będą nisko oceniane,
---          nawet na 0p; rozwiązania będą też poddawane dodatkowym testom.
---    - właściwego wykorzystania mechanizmów paradygmatu funkcyjnego i języka Haskell,
---          tudzież czytelności i stylu.
---    - rozwiązania skrajnie nieefektywne będą karane; przy porządnym rozwiązaniu testy
---          przechodzą w ok 1s. Rozwiązanie, gdzie będzie to trwało ponad 2 minuty
---          uznamy za nieefektywne.
-
 module RegExtra where
 import Mon
 import Reg
@@ -50,6 +37,10 @@ simpl (Eps :| x) = case nullable x of
                      False -> (Eps :| (simpl x))
 simpl (x :| Eps) = simpl (Eps :| x)
 simpl ((x :| y) :| z) = simpl (x :| (y :| z))
+simpl ((Lit x) :| (Lit y)) = if x == y then
+                               Lit x
+                             else
+                               Lit x :| Lit y
 simpl (x :| y) = simpl x :| simpl y
 simpl (Many x) = case x of
                    Empty -> Eps
@@ -69,7 +60,7 @@ empty :: Eq c => Reg c -> Bool
 empty Empty = True
 empty (r1 :> r2) = (empty r1) || (empty r2)
 empty (r1 :| r2) = (empty r1) && (empty r2)
-empty r = False
+empty _ = False
 
 der :: Eq c => c -> Reg c -> Reg c
 der c r = (Lit c :> r)
