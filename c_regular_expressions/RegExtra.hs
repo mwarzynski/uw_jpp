@@ -110,8 +110,7 @@ search r (x:xs) = let y = match r (x:xs) in
                     Nothing -> y
                     Just w -> case y of
                       Nothing -> Just w
-                      Just y -> if length w > length y then Just w
-                                else Just y
+                      Just y -> Just y
 
 findall :: Eq c => Reg c -> [c] -> [[c]]
 findall r [] = []
