@@ -75,6 +75,11 @@ recRightNul x = forAllNullable $ \y ->
                forAllMatching x $ \cs ->
                accepts x cs ==> accepts (x:>y) cs
 
+-- mayStartNul :: Reg AB -> Property
+-- mayStartNul x = forAllNullable $ \y ->
+--                forAllMatching x $ \cs ->
+--                accepts x cs ==> accepts (x:>y) cs
+
 equivRefl :: Reg AB -> Bool
 equivRefl r = r === r
 

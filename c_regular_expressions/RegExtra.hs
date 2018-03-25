@@ -68,14 +68,14 @@ listToReg (h:t) = foldl f h t
 nullable :: Reg c -> Bool
 nullable Eps = True
 nullable (Many _) = True
-nullable (r1 :> r2) = nullable r1 && nullable r2
-nullable (r1 :| r2) = nullable r1 || nullable r2
+nullable (x :> y) = nullable x && nullable y
+nullable (x :| y) = nullable x || nullable y
 nullable _ = False
 
 empty :: Eq c => Reg c -> Bool
 empty Empty = True
-empty (r1 :> r2) = (empty r1) || (empty r2)
-empty (r1 :| r2) = (empty r1) && (empty r2)
+empty (x :> y) = (empty x) || (empty y)
+empty (x :| y) = (empty x) && (empty y)
 empty _ = False
 
 der :: Eq c => c -> Reg c -> Reg c
@@ -93,15 +93,24 @@ ders w r = foldl f r w
                 f r x = simpl $ der x r
 
 accepts :: Eq c => Reg c -> [c] -> Bool
-accepts r w = acceptsh (simpl r) w
-acceptsh r [] = nullable r
-acceptsh r (h:t) = accepts (der h r) t
+accepts r w = h (simpl r) w
+        where h :: Eq c => Reg c -> [c] -> Bool
+              h r [] = nullable r
+              h r (c:cs) = accepts (der c r) cs
 
 mayStart :: Eq c => c -> Reg c -> Bool
 mayStart c r = if der c r === Empty then False else True
 
 match :: Eq c => Reg c -> [c] -> Maybe [c]
-match r w = Nothing
+match r w = matchh r w
+    where matchh :: Eq c => Reg c -> [c] -> Maybe [c]
+          matchh r [] = Nothing
+          matchh r (c:w) = if mayStart c r then
+                             case matchh (der c r) w of
+                               Just n -> Just ([c] ++ n)
+                               Nothing -> Just [c]
+                           else
+                             Nothing
 
 search :: Eq c => Reg c -> [c] -> Maybe [c]
 search r w = Nothing
