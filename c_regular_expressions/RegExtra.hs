@@ -95,19 +95,16 @@ mayStart :: Eq c => c -> Reg c -> Bool
 mayStart c r = not (der c r === Empty)
 
 match :: Eq c => Reg c -> [c] -> Maybe [c]
-match r [] = Nothing
+match r [] = if nullable r then Just [] else Nothing
 match r word = let s = filter (accepts r) (Data.List.inits word) in
                  if length s == 0 then Nothing
                  else Just (last s)
 
 search :: Eq c => Reg c -> [c] -> Maybe [c]
-search r [] = Nothing
-search r (x:xs) = let y = match r (x:xs) in
-                  case search r xs of
-                    Nothing -> y
-                    Just w -> case y of
-                      Nothing -> Just w
-                      Just y -> Just y
+search r [] = match r []
+search r word = case match r word of
+                    Just w -> Just word
+                    Nothing -> search r (tail word)
 
 findall :: Eq c => Reg c -> [c] -> [[c]]
 findall r [] = []
