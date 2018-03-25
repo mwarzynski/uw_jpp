@@ -102,18 +102,29 @@ mayStart :: Eq c => c -> Reg c -> Bool
 mayStart c r = if der c r === Empty then False else True
 
 match :: Eq c => Reg c -> [c] -> Maybe [c]
-match r w = matchh r w
-    where matchh :: Eq c => Reg c -> [c] -> Maybe [c]
-          matchh r [] = Nothing
-          matchh r (c:w) = if mayStart c r then
-                             case matchh (der c r) w of
-                               Just n -> Just ([c] ++ n)
-                               Nothing -> Just [c]
-                           else
-                             Nothing
+match r w = h r w
+    where h :: Eq c => Reg c -> [c] -> Maybe [c]
+          h r [] = Nothing
+          h r (c:w) = if accepts r [c] then
+                        case h (der c r) w of
+                          Just n -> Just ([c] ++ n)
+                          Nothing -> Just [c]
+                      else
+                        Nothing
 
 search :: Eq c => Reg c -> [c] -> Maybe [c]
-search r w = Nothing
+search r w = h r w
+        where h :: Eq c => Reg c -> [c] -> Maybe [c]
+              h r [] = Nothing
+              h r (x:xs) = let word = h r xs in
+                           let d = match r (x:xs) in
+                             case word of
+                               Nothing -> d
+                               Just word -> case d of
+                                 Nothing -> Just word
+                                 Just d -> if length d > length word then Just d
+                                                                     else Just word
+
 
 findall :: Eq c => Reg c -> [c] -> [[c]]
 findall r w = []
