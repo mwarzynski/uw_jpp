@@ -108,11 +108,10 @@ search r word = case match r word of
 
 findall :: Eq c => Reg c -> [c] -> [[c]]
 findall r [] = []
-findall r (x:xs) = let ws = findall r xs in
-                   case match r (x:xs) of
-                     Nothing -> ws
-                     Just w -> if w `elem` ws then ws
-                               else [w] ++ ws
+findall r word = case match r word of
+                   Nothing -> findall r (drop 1 word)
+                   Just w -> let words = findall r (drop (maximum [length w, 1]) word) in
+                     [w] ++ words
 
 char :: Char -> Reg Char
 char = Lit
