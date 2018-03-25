@@ -122,12 +122,17 @@ search r w = h r w
                                Nothing -> d
                                Just word -> case d of
                                  Nothing -> Just word
-                                 Just d -> if length d > length word then Just d
-                                                                     else Just word
-
+                                 Just d -> if length word > length d then Just word
+                                                                     else Just d
 
 findall :: Eq c => Reg c -> [c] -> [[c]]
-findall r w = []
+findall r [] = []
+findall r (x:xs) = let words = findall r xs in
+                   case match r (x:xs) of
+                     Nothing -> words
+                     Just w -> let ws = (words ++ [w]) in
+                               let m = maximum [(length w) | w <- ws] in
+                                 filter ((== m) . length) ws
 
 char :: Char -> Reg Char
 char = Lit
