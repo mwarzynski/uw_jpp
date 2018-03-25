@@ -29,35 +29,28 @@ simpl (x :> Eps) = simpl x
 simpl (Eps :> x) = simpl x
 simpl ((x :> y) :> z) = simpl (x :> (y :> z))
 simpl (x :> y) = simpl x :> simpl y
-
 simpl (Empty :| x) = simpl x
 simpl (x :| Empty) = simpl x
-simpl (Eps :| x) = case nullable x of
-                     True -> (simpl x)
-                     False -> (Eps :| (simpl x))
+simpl (Eps :| x) = if nullable x then (simpl x) else (Eps :| simpl x)
 simpl (x :| Eps) = simpl (Eps :| x)
-
-simpl (x :| y) = let f = regToList (x :| y) [] in
-                     listToReg f
-
+simpl (x :| y) = let f = regToList (x :| y) [] in listToReg f
 simpl (Many x) = case x of
                    Empty -> Eps
                    Eps -> Eps
                    x -> Many (simpl x)
 simpl x = x
 
-listNullable :: [Reg c] -> Bool
-listNullable [] = False
-listNullable (h:t) = if nullable h then True else listNullable t
+nullableList :: [Reg c] -> Bool
+nullableList [] = False
+nullableList (h:t) = if nullable h then True else nullableList t
 
 regToList :: Eq c => Reg c -> [Reg c] -> [Reg c]
-regToList (x :| y) acc = let ac = regToList x acc in
-                        regToList y ac
+regToList (x :| y) acc = let ac = regToList x acc in regToList y ac
 regToList Empty acc = acc
-regToList Eps acc = if listNullable acc then acc else [Eps] ++ acc
+regToList Eps acc = if nullableList acc then acc else [Eps] ++ acc
 regToList x acc = let xs = simpl x in
-                 if xs `elem` acc then acc
-                 else acc ++ [xs]
+                    if xs `elem` acc then acc
+                    else acc ++ [xs]
 
 listToReg :: [Reg c] -> Reg c
 listToReg [] = Eps
@@ -90,7 +83,7 @@ der c _ = Empty
 ders :: Eq c => [c] -> Reg c -> Reg c
 ders w r = foldl f r w
           where f :: Eq c => Reg c -> c -> Reg c
-                f r x = simpl $ der x r
+                f r x = simpl (der x r)
 
 accepts :: Eq c => Reg c -> [c] -> Bool
 accepts r w = h (simpl r) w
@@ -99,7 +92,7 @@ accepts r w = h (simpl r) w
               h r (c:cs) = accepts (der c r) cs
 
 mayStart :: Eq c => c -> Reg c -> Bool
-mayStart c r = if der c r === Empty then False else True
+mayStart c r = not (der c r === Empty)
 
 match :: Eq c => Reg c -> [c] -> Maybe [c]
 match r [] = Nothing
