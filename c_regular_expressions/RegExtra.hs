@@ -29,22 +29,48 @@ class Equiv a where
   (===) :: a -> a -> Bool
 
 instance (Eq c) => Equiv (Reg c) where
-  r1 === r2 = r1 == r2
+  x === y = (simpl x) == (simpl y)
 
 instance Mon (Reg c) where
-  m1 = Empty
-  x <> y = Empty
+  m1 = Eps
+  x <> y = x :> y
   
 simpl :: Eq c => Reg c -> Reg c
+
 simpl (Empty :> r) = Empty
-simpl (r :> Empty) = simpl r
+simpl (r :> Empty) = Empty
 simpl (r :> Eps) = simpl r
 simpl (Eps :> r) = simpl r
-simpl (r :| Eps) = if nullable r then (simpl r) else ((simpl r) :| Eps)
-simpl (Eps :| r) = if nullable r then (simpl r) else (Eps :| (simpl r))
-simpl (Many r) = if empty r then Empty else 
-                    if r == Eps then Eps else
-                        Many (simpl r)
+
+simpl (x :> (y :> z)) = simpl x :> simpl y :> simpl z
+simpl ((x :> y) :> z) = simpl (x :> (y :> z))
+simpl (x :> y) = simpl x :> simpl y
+
+simpl (Empty :| r) = simpl r
+simpl (r :| Empty) = simpl r
+
+simpl (Eps :| r) = case nullable r of
+                     True -> (simpl r)
+                     False -> (Eps :| (simpl r))
+simpl (r :| Eps) = simpl (Eps :| r)
+
+simpl (x :| (y :| z)) = if x === z then
+                          simpl (x :| y)
+                        else if x === y then
+                          simpl (x :| z)
+                        else
+                          simpl x :| simpl y :| simpl z
+simpl ((x :| y) :| z) = simpl (x :| (y :| z))
+simpl (x :| y) = if x === y then
+                   simpl x
+                 else
+                   simpl x :| simpl y
+
+simpl (Many r) = case r of
+                   Empty -> Eps
+                   Eps -> Eps
+                   r -> Many (simpl r)
+
 simpl r = r
 
 nullable :: Reg c -> Bool
@@ -65,7 +91,8 @@ der :: Eq c => c -> Reg c -> Reg c
 der c r = (Lit c :> r)
 
 ders :: Eq c => [c] -> Reg c -> Reg c
-ders c r = r
+ders [] r = r
+ders (h:t) r = (Lit h) :> ders t r
 
 accepts :: Eq c => Reg c -> [c] -> Bool
 accepts r w = False
