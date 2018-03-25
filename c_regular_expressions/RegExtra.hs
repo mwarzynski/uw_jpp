@@ -22,30 +22,47 @@ import Mon
 import Reg
 import Data.List
 
-data AB = A | B deriving(Eq,Ord,Show)
+data AB = A | B deriving (Eq, Ord, Show)
 
 infix 4 ===
 class Equiv a where
   (===) :: a -> a -> Bool
 
 instance (Eq c) => Equiv (Reg c) where
-   r1 === r2 = False
+  r1 === r2 = r1 == r2
 
 instance Mon (Reg c) where
   m1 = Empty
   x <> y = Empty
   
-simpl :: Reg c -> Reg c
-simpl x = x
+simpl :: Eq c => Reg c -> Reg c
+simpl (Empty :> r) = Empty
+simpl (r :> Empty) = simpl r
+simpl (r :> Eps) = simpl r
+simpl (Eps :> r) = simpl r
+simpl (r :| Eps) = if nullable r then (simpl r) else ((simpl r) :| Eps)
+simpl (Eps :| r) = if nullable r then (simpl r) else (Eps :| (simpl r))
+simpl (Many r) = if empty r then Empty else 
+                    if r == Eps then Eps else
+                        Many (simpl r)
+simpl r = r
 
 nullable :: Reg c -> Bool
-nullable x = False
+nullable Empty = False
+nullable Eps = True
+nullable (Lit c) = False
+nullable (Many r) = True
+nullable (r1 :> r2) = nullable r1 && nullable r2
+nullable (r1 :| r2) = nullable r1 || nullable r2
 
-empty :: Reg c -> Bool 
+empty :: Eq c => Reg c -> Bool 
+empty Empty = True
+empty (r1 :> r2) = (empty r1) || (empty r2)
+empty (r1 :| r2) = (empty r1) && (empty r2)
 empty r = False
 
-der :: c -> Reg c -> Reg c
-der c r = r
+der :: Eq c => c -> Reg c -> Reg c
+der c r = (Lit c :> r)
 
 ders :: Eq c => [c] -> Reg c -> Reg c
 ders c r = r
@@ -80,3 +97,4 @@ number = digit :> Many digit
 ident = letter :> Many (letter :| digit)
 
 many1 r = r :> Many r
+
