@@ -33,7 +33,7 @@ simpl (Empty :| x) = simpl x
 simpl (x :| Empty) = simpl x
 simpl (Eps :| x) = if nullable x then (simpl x) else (Eps :| simpl x)
 simpl (x :| Eps) = simpl (Eps :| x)
-simpl (x :| y) = let f = regToList (x :| y) [] in listToReg f
+simpl (x :| y) = let l = regToList (x :| y) [] in listToReg (nub l)
 simpl (Many x) = case x of
                    Empty -> Eps
                    Eps -> Eps
@@ -92,7 +92,7 @@ accepts r w = h (simpl r) w
               h r (c:cs) = accepts (der c r) cs
 
 mayStart :: Eq c => c -> Reg c -> Bool
-mayStart c r = not (der c r === Empty)
+mayStart c r = not (empty (der c r))
 
 match :: Eq c => Reg c -> [c] -> Maybe [c]
 match r [] = if nullable r then Just [] else Nothing
