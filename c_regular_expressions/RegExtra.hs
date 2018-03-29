@@ -23,22 +23,27 @@ instance Mon (Reg c) where
   x <> y = x :> y
 
 simpl :: Eq c => Reg c -> Reg c
-simpl (Empty :> _) = Empty
-simpl (_ :> Empty) = Empty
-simpl (x :> Eps) = simpl x
-simpl (Eps :> x) = simpl x
-simpl ((x :> y) :> z) = simpl (x :> (y :> z))
-simpl (x :> y) = simpl x :> simpl y
-simpl (Empty :| x) = simpl x
-simpl (x :| Empty) = simpl x
-simpl (Eps :| x) = if nullable x then (simpl x) else (Eps :| simpl x)
-simpl (x :| Eps) = simpl (Eps :| x)
-simpl (x :| y) = let l = regToList (x :| y) [] in listToReg (nub l)
-simpl (Many x) = case x of
+simpl r = let n = ssimpl r in
+            if r == n then n
+            else simpl n
+
+ssimpl :: Eq c => Reg c -> Reg c
+ssimpl (Empty :> _) = Empty
+ssimpl (_ :> Empty) = Empty
+ssimpl (x :> Eps) = ssimpl x
+ssimpl (Eps :> x) = ssimpl x
+ssimpl ((x :> y) :> z) = ssimpl (x :> (y :> z))
+ssimpl (x :> y) = ssimpl x :> ssimpl y
+ssimpl (Empty :| x) = ssimpl x
+ssimpl (x :| Empty) = ssimpl x
+ssimpl (Eps :| x) = if nullable x then (ssimpl x) else (Eps :| ssimpl x)
+ssimpl (x :| Eps) = ssimpl (Eps :| x)
+ssimpl (x :| y) = let l = regToList (x :| y) [] in listToReg (nub l)
+ssimpl (Many x) = case x of
                    Empty -> Eps
                    Eps -> Eps
-                   x -> Many (simpl x)
-simpl x = x
+                   x -> Many (ssimpl x)
+ssimpl x = x
 
 nullableList :: [Reg c] -> Bool
 nullableList [] = False
