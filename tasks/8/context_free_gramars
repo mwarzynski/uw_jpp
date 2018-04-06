@@ -1,0 +1,82 @@
+Example 1.
+G:
+S -> aSa | aBa
+B -> Bb | Eps
+
+L(G) = {a^n .. b^m .. a^n | n >= 1, m >= 0}
+
+FIRST(S) = {a}, FIRST(B) = {#, b}
+FOLLOW(S) = {a}
+FOLLOW(B) = {a,b}
+
+SELECT(S -> aSa) = FIRST(aSa * FOLLOW(S)) = FIRST(aSa * a) = {a}
+SELECT(S -> aBa) = FIRST(aBa * FOLLOW(S)) = {a}
+SELECT(B -> Bb) = FIRST(Bb * FOLLOW(B)) = {b}
+SELECT(B -> Eps) = FIRST(Eps * FOLLOW(B)) = {a, b}
+
+
+Example 2.
+S -> Eps | aSb | SS
+L(S) = set of words with nice parenthesies, like when a = (, b = )
+
+FIRST(S) = {#, a}
+FOLLOW(S) = {#, a, b}
+
+SELECT(S -> Eps) = FIRST()
+SELECT(S -> Eps) = FIRST(Eps * {#,a,b}) = {#,a,b}
+SELECT(S -> aSb) = FIRST(aSb* {#,a,b}) = {a}
+SELECT(S -> SS) = FIRST(SS * {#,a,b}) = {#,a,b}
+
+What's the derivation tree for aabaaababbbb?
+(Rysujemy to drzewko używając rzeczy z gramatyk i terminali w liściach.)
+
+Example 3.
+I want you to write grammas recognising the following languages:
+
+NOTE:
+x y[z] === (x % z = y)
+x 1[2] === x % 2 = 1
+x 0[3] === x % 3 = 0
+
+1. {a^n .. b^m .. c^m .. d^2n | n,m >= 0}
+G: S -> a S dd | T
+   T -> bTc    | Eps
+
+2. {a^n .. b^m .. c^(m+n)     | n,m >= 0}
+G: S -> a S c | T
+   T -> b T c | Eps
+
+3. {w from {0,1}* | |w| = 1[2] }
+G: S -> 0G | 1G
+   G -> 0S | 1S | Eps
+
+4. {a^n .. b^n | n >= 0 and n != 0[3] }
+G: S -> aaa S bbb | B
+   B -> ab | aabb
+
+5. {a^i .. b^j .. c^k | k != i + j }
+G: S -> L | M
+
+# k < i + j
+    L -> aA | bB
+    A -> L | aAc | B
+    B -> bBc | Eps
+
+# k > i + j
+    M -> a M c | N
+    N -> b N c | O
+    O -> c | O c
+
+// but, we can't produce many b's
+
+// the new approach
+    S -> L | G
+
+    E -> a E c | F
+    F -> b F c | Eps
+
+    L -> a E | a L | a L c | K
+    K -> b D | b K | b K c
+
+    G -> Ec | Gc
+
