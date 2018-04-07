@@ -1,4 +1,44 @@
-a) gramatyka języka – można ją podać w notacji EBNF (szczególnie zalecane osobom chcącym
-skorzystać z BNFC) lub w dowolnej rozsądnej postaci „na papierze” (można zacząć od
-pewnego poziomu abstrakcji – nie definiować literałów, identyfikatorów itp.)
+comment "//" ;
+comment "/*" "*/" ;
+
+Prog. Program  ::= [Function] ;
+Fun.  Function ::= Type Ident "(" [Decl] ")" "{" [Stm] "}" ;
+Dec.  Decl     ::= Type [Ident] ;
+
+terminator Function "" ;
+terminator Stm "" ;
+separator  Decl "," ;
+separator  nonempty Ident "," ;
+
+SDecl.   Stm ::= Decl ";"  ;
+SExp.    Stm ::= Exp ";" ;
+SBlock.  Stm ::= "{" [Stm] "}" ;
+SWhile.  Stm ::= "while" "(" Exp ")" Stm ;
+SFor.    Stm ::= "for" "(" Exp ";" Exp ";" Exp ")" Stm ;
+SIf.     Stm ::= "if" "(" Exp ")" Stm ;
+SIfElse. Stm ::= "if" "(" Exp ")" Stm "else" Stm ;
+SReturn. Stm ::= "return" Exp  ";" ;
+
+EAss.    Exp  ::= Ident "=" Exp ;
+ELt.     Exp1 ::= Exp2 "<" Exp2 ;
+EGt.     Exp1 ::= Exp2 ">" Exp2 ;
+EAdd.    Exp2 ::= Exp2 "+" Exp3 ;
+ESub.    Exp2 ::= Exp2 "-" Exp3 ;
+EMul.    Exp3 ::= Exp3 "*" Exp5 ;
+EEPlus.  Exp4 ::= Ident "+=" Exp5 ;
+EEMinus. Exp4 ::= Ident "-=" Exp5 ;
+EPPlus.  Exp4 ::= Ident "++" ;
+Call.    Exp5 ::= Ident "(" [Exp] ")" ;
+EVar.    Exp5 ::= Ident ;
+EStr.    Exp5 ::= String ;
+EInt.    Exp5 ::= Integer ;
+EDouble. Exp5 ::= Double ;
+
+coercions Exp 5 ;
+
+separator Exp "," ;
+
+TInt.    Type ::= "int" ;
+TDouble. Type ::= "double" ;
+TString. Type ::= "string" ;
 
