@@ -1,0 +1,4 @@
+a) gramatyka języka – można ją podać w notacji EBNF (szczególnie zalecane osobom chcącym
+skorzystać z BNFC) lub w dowolnej rozsądnej postaci „na papierze” (można zacząć od
+pewnego poziomu abstrakcji – nie definiować literałów, identyfikatorów itp.)
+
