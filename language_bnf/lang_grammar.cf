@@ -5,14 +5,16 @@ token TokenBool {"true"} | {"false"} ;
 
 Prog.    Program  ::= [Function] ;
 
-Fun.     Function ::= Ident "(" [Decl] ")" ":" [Type] "{" [Stm] "}" ;
+Fun.     Function ::= Ident "(" [Decl] ")" ":" "(" [Type] ")" "{" [Stm] "}" ;
+FunOne.  Function ::= Ident "(" [Decl] ")" ":" Type "{" [Stm] "}" ;
+FunNone. Function ::= Ident "(" [Decl] ")" ":" "{" [Stm] "}" ;
 
 Dec.     Decl     ::= Ident ":" Type ;
 DecMany. Decl     ::= [Ident] ":" Type ;
 DecSet.  Decl     ::= Ident ":" Type "=" Exp2 ;
 DecArr.  Decl     ::= Ident ":" "[" Type "," Integer "]" ; 
 
-DecArrSet.    Decl   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" [Exp] "]"; 
+DecArrSet.    Decl   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
 DecArrSetMul. Decl   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
 
 terminator Function "" ;
@@ -24,10 +26,11 @@ SDecl.   Stm ::= Decl ";"  ;
 SExp.    Stm ::= Exp ";" ;
 SBlock.  Stm ::= "{" [Stm] "}" ;
 SWhile.  Stm ::= "while"  Exp  Stm ;
-SFor.    Stm ::= "for" Exp "," Exp "," Exp Stm ;
+SForD.    Stm ::= "for" Decl "," Exp "," Exp Stm ;
+SForE.    Stm ::= "for" Exp "," Exp "," Exp Stm ;
 SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;
-SReturn. Stm ::= "return" Exp  ";" ;
+SReturn. Stm ::= "return" [Exp]  ";" ;
 
 SJContinue. Stm ::= "continue" ";" ;
 SJBreak.    Stm ::= "break" ";" ;
@@ -55,20 +58,25 @@ EDiv.    Exp3 ::= Exp3 "/" Exp3 ;
 ENeg.    Exp4 ::= "-" Exp4 ;
 EPos.    Exp4 ::= "+" Exp4 ;
 Call.    Exp4 ::= Ident "(" [Exp] ")" ;
-EArr.    Exp4 ::= Ident "[" Exp "]" ;
+EVarArr. Exp4 ::= Ident "[" Exp "]" ;
 EVar.    Exp4 ::= Ident ;
+EArr.    Exp4 ::= "[" [Exp] "]" ;
 EStr.    Exp4 ::= String ;
-EInt.    Exp4 ::= Integer ;
-EDouble. Exp4 ::= Double ;
+EI32.    Exp4 ::= Integer ;
+EI64.    Exp4 ::= Integer ;
+EF32.    Exp4 ::= Double ;
+EF64.    Exp4 ::= Double ;
 EBool.   Exp4 ::= TokenBool ;
 
 coercions Exp 4 ;
 
 separator Exp "," ;
 
-TInt.    Type ::= "int" ;
-TDouble. Type ::= "double" ;
-TString. Type ::= "str" ;
-TBool.   Type ::= "bool" ;
+TI32.  Type ::= "i32" ;
+TI64.  Type ::= "i64" ;
+TF32.  Type ::= "f32" ;
+TF64.  Type ::= "f64" ;
+TStr.  Type ::= "str" ;
+TBool. Type ::= "bool" ;
 
 separator Type  "," ;
