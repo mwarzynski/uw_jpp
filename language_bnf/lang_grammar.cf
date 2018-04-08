@@ -36,11 +36,12 @@ SJContinue. Stm ::= "continue" ";" ;
 SJBreak.    Stm ::= "break" ";" ;
 
 EAss.    Exp  ::= Ident "=" Exp2 ;
-EAssArr. Exp  ::= Ident "[" Exp "]" "=" Exp2 ;
+EAssArr. Exp  ::= Ident "[" Exp3 "]" "=" Exp2 ;
 
 EEPlus.  Exp1 ::= Ident "+=" Exp2 ;
 EEMinus. Exp1 ::= Ident "-=" Exp2 ;
 EPPlus.  Exp1 ::= Ident "++" ;
+EMMinus. Exp1 ::= Ident "--" ;
 
 ElOr.    Exp2  ::= Exp2 "||" Exp2;
 ElAnd.   Exp2  ::= Exp2 "&&" Exp2;
