@@ -12,8 +12,8 @@ DecMany. Decl     ::= [Ident] ":" Type ;
 DecSet.  Decl     ::= Ident ":" Type "=" Exp2 ;
 DecArr.  Decl     ::= Ident ":" "[" Type "," Integer "]" ; 
 
-DecArrSet.    Decl   ::= Ident ":" "[" Type "," Integer "]" "=" "[" [Exp] "]"; 
-DecArrSetMul. Decl   ::= Ident ":" "[" Type "," Integer "]" "=" "[" Exp "," ".." "]"; 
+DecArrSet.    Decl   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" [Exp] "]"; 
+DecArrSetMul. Decl   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
 
 terminator Function "" ;
 terminator Stm "" ;
@@ -39,8 +39,8 @@ EEPlus.  Exp1 ::= Ident "+=" Exp2 ;
 EEMinus. Exp1 ::= Ident "-=" Exp2 ;
 EPPlus.  Exp1 ::= Ident "++" ;
 
-Elor.    Exp2  ::= Exp2 "or" Exp2;
-Eland.   Exp2  ::= Exp2 "and" Exp2;
+ElOr.    Exp2  ::= Exp2 "||" Exp2;
+ElAnd.   Exp2  ::= Exp2 "&&" Exp2;
 
 ELt.     Exp2 ::= Exp2 "<" Exp2 ;
 ELt2.    Exp2 ::= Exp2 "<" Exp2 "<" Exp2 ;
@@ -55,8 +55,8 @@ EDiv.    Exp3 ::= Exp3 "/" Exp3 ;
 ENeg.    Exp4 ::= "-" Exp4 ;
 EPos.    Exp4 ::= "+" Exp4 ;
 Call.    Exp4 ::= Ident "(" [Exp] ")" ;
-EVar.    Exp4 ::= Ident ;
 EArr.    Exp4 ::= Ident "[" Exp "]" ;
+EVar.    Exp4 ::= Ident ;
 EStr.    Exp4 ::= String ;
 EInt.    Exp4 ::= Integer ;
 EDouble. Exp4 ::= Double ;
@@ -68,7 +68,7 @@ separator Exp "," ;
 
 TInt.    Type ::= "int" ;
 TDouble. Type ::= "double" ;
-TString. Type ::= "string" ;
+TString. Type ::= "str" ;
 TBool.   Type ::= "bool" ;
 
 separator Type  "," ;
