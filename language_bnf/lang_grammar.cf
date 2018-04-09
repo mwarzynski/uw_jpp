@@ -3,25 +3,38 @@ comment "/*" "*/" ;
 
 token TokenBool {"true"} | {"false"} ;
 
-Prog.    Program  ::= [Function] ;
+Prog.    Program  ::= [Decl] ;
 
-FunOne.  Function ::= Ident "(" [Decl] ")" ":" Type "{" [Stm] "}" ;
-FunNone. Function ::= Ident "(" [Decl] ")" ":" "{" [Stm] "}" ;
+DStruct.   Decl ::= Struct ;
+DFunction. Decl ::= Function ;
+DVar.      Decl ::= Var ";" ;
 
-Dec.     Decl     ::= Ident ":" Type ;
-DecMany. Decl     ::= [Ident] ":" Type ;
-DecSet.  Decl     ::= Ident ":" Type "=" Exp2 ;
-DecArr.  Decl     ::= Ident ":" "[" Type "," Integer "]" ; 
+DecStruct. Struct ::= "struct" Ident "{" [Var] "}" ;
 
-DecArrSet.    Decl   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
-DecArrSetMul. Decl   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
+FunOne.  Function ::= "fn" Ident "(" [Var] ")" ":" Type "{" [Stm] "}" ;
+FunStr.  Function ::= "fn" Ident "(" [Var] ")" ":" Ident "{" [Stm] "}" ;
+FunNone. Function ::= "fn" Ident "(" [Var] ")" ":" "{" [Stm] "}" ;
+
+Dec.      Var     ::= Ident ":" Type ;
+DecIdent. Var     ::= Ident ":" Ident ;
+DecMany.  Var     ::= [Ident] ":" Type ;
+DecSet.   Var     ::= Ident ":" Type "=" Exp2 ;
+DecArr.   Var     ::= Ident ":" "[" Type "," Integer "]" ;
+
+DecArrSet.    Var   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
+DecArrSetMul. Var   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
 
 terminator Function "" ;
 terminator Stm "" ;
-separator  Decl "," ;
+terminator Decl "" ;
+terminator Var "" ;
+
+separator  Decl "" ;
+separator  Var "," ;
 separator  nonempty Ident "," ;
 
-SDecl.   Stm ::= Decl ";"  ;
+SFunc.   Stm ::= Function ;
+SDecl.   Stm ::= Var ";"  ;
 SExp.    Stm ::= Exp ";" ;
 SBlock.  Stm ::= "{" [Stm] "}" ;
 SWhile.  Stm ::= "while"  Exp  Stm ;
@@ -30,15 +43,16 @@ SForE.    Stm ::= "for" Exp "," Exp "," Exp Stm ;
 SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;
 
-SReturnOne. Stm ::= "return" Exp ";" ;
-SReturn.    Stm ::= "return" ";" ;
-
+SReturnOne.    Stm ::= "return" Exp ";" ;
+SReturnStruct. Stm ::= "return" Ident ";" ;
+SReturn.       Stm ::= "return" ";" ;
 
 SJContinue. Stm ::= "continue" ";" ;
 SJBreak.    Stm ::= "break" ";" ;
 
 EAss.    Exp  ::= Ident "=" Exp2 ;
 EAssArr. Exp  ::= Ident "[" Exp3 "]" "=" Exp2 ;
+EAssStr. Exp  ::= Ident "." Ident "=" Exp2 ;
 
 EEPlus.  Exp1 ::= Ident "+=" Exp2 ;
 EEMinus. Exp1 ::= Ident "-=" Exp2 ;
@@ -63,6 +77,7 @@ ENeg.    Exp4 ::= "-" Exp4 ;
 EPos.    Exp4 ::= "+" Exp4 ;
 Call.    Exp4 ::= Ident "(" [Exp] ")" ;
 EVarArr. Exp4 ::= Ident "[" Exp "]" ;
+EStrAtt. Exp4 ::= Ident "." Ident ;
 EVar.    Exp4 ::= Ident ;
 EStr.    Exp4 ::= String ;
 EI32.    Exp4 ::= Integer ;
