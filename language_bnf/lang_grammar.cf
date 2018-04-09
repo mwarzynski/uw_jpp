@@ -5,7 +5,6 @@ token TokenBool {"true"} | {"false"} ;
 
 Prog.    Program  ::= [Function] ;
 
-Fun.     Function ::= Ident "(" [Decl] ")" ":" "(" [Type] ")" "{" [Stm] "}" ;
 FunOne.  Function ::= Ident "(" [Decl] ")" ":" Type "{" [Stm] "}" ;
 FunNone. Function ::= Ident "(" [Decl] ")" ":" "{" [Stm] "}" ;
 
@@ -30,7 +29,10 @@ SForD.    Stm ::= "for" Decl "," Exp "," Exp Stm ;
 SForE.    Stm ::= "for" Exp "," Exp "," Exp Stm ;
 SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;
-SReturn. Stm ::= "return" [Exp]  ";" ;
+
+SReturnOne. Stm ::= "return" Exp ";" ;
+SReturn.    Stm ::= "return" ";" ;
+
 
 SJContinue. Stm ::= "continue" ";" ;
 SJBreak.    Stm ::= "break" ";" ;
