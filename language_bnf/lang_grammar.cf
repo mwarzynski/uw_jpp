@@ -42,8 +42,8 @@ SDecl.   Stm ::= Var ";"  ;
 SExp.    Stm ::= Exp ";" ;
 SBlock.  Stm ::= "{" [Stm] "}" ;
 SWhile.  Stm ::= "while"  Exp  Stm ;
-SForD.    Stm ::= "for" VarS "," Exp "," Exp Stm ;
-SForE.    Stm ::= "for" Exp "," Exp "," Exp Stm ;
+SForD.   Stm ::= "for" VarS "," Exp "," Exp Stm ;
+SForE.   Stm ::= "for" Exp "," Exp "," Exp Stm ;
 SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;
 
