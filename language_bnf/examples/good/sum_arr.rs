@@ -1,5 +1,4 @@
 fn main() : i32 {
-  // tablice indeksowane int lub cos a la listy
   values: [i32*100] = [ 1, .. ];
 
   i:i32;

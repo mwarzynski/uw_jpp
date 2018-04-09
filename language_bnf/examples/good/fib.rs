@@ -13,7 +13,7 @@ fn fib_better(n:i32 = 5) : i32 {
 
   for i:i32 = 0, i < n, i++ {
     if a + b < 0 {
-      // operacje przerywajace petle while - break i continue
+      // break and continue keywords
       break; // overflow
     }
 

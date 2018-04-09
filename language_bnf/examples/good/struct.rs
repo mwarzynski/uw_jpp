@@ -1,3 +1,4 @@
+
 struct Rectangle {
   x: i32,
   y: i32

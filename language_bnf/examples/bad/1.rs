@@ -46,8 +46,8 @@ nope7() : {
   del:i32 = 0;
   val:i32 = 1029301238;
 
-  // jawnie obsluzone dynamiczne bledy wykonania,
-  // np. dzielenie przez zero
+  // example of handling dynamic errors
+  // e.g. division by zero
 
   // interpreter will detect runtime
   // error and as a result program ends

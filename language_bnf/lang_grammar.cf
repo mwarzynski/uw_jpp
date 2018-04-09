@@ -1,5 +1,4 @@
 comment "//" ;
-comment "/*" "*/" ;
 
 token TokenBool {"true"} | {"false"} ;
 
@@ -22,23 +21,22 @@ Dec.       VarS     ::= Ident ":" Type ;
 DecMany.   VarS     ::= [Ident] ":" Type ;
 DecSet.    VarS     ::= Ident ":" Type "=" Exp2 ;
 DecStruct. VarE     ::= Ident ":" Ident ;
-DecArr.    VarE     ::= Ident ":" "[" Type "," Integer "]" ;
 DecDict.   VarE     ::= Ident ":" "{" Type "->" Type "}" ; 
 
-DecArrSet.        VarE   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
-DecArrSetMul.     VarE   ::= Ident ":" "[" Type "*" Integer "]"; 
-DecArrSetMulInit. VarE   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
+DecArr.        VarE   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
+DecArrMul.     VarE   ::= Ident ":" "[" Type "*" Integer "]"; 
+DecArrMulInit. VarE   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
 
 terminator Stm "" ;
-terminator VarS "" ;
-terminator VarE "" ;
 
 separator  Decl "" ;
-separator  Var "," ;
+separator  VarS "," ;
+separator  VarE "," ;
+separator  Var  "," ;
 separator  nonempty Ident "," ;
 
 SFunc.   Stm ::= Function ;
-SDecl.   Stm ::= Var ";"  ;
+SDecl.   Stm ::= Var ";" ;
 SExp.    Stm ::= Exp ";" ;
 SBlock.  Stm ::= "{" [Stm] "}" ;
 SWhile.  Stm ::= "while"  Exp  Stm ;

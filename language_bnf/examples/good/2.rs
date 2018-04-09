@@ -1,12 +1,11 @@
 
-// funkcje zwracajace wartosc
+// yay, functions may return value
 fn main() : i32 {
   n:i32 = 0;
 
   i:i32;
   for i = 0, i < 100, i++ {
     { // local scope
-      // przeslanianie identyfikatorow ze statycznym ich wiazaniem
       i:i32;
       for i = 100, i < 105, i++ {
         n -= 50;
