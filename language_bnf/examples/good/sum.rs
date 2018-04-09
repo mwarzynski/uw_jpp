@@ -13,3 +13,4 @@ sum(i:i32, j:i32) : {
 main() : i32 {
   print(sum(10, 100)); 
 }
+
