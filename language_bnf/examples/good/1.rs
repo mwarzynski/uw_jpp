@@ -1,4 +1,4 @@
-main() : i32 {
+fn main() : i32 {
   // typ string, literaly napisowe, 
   err:str = "Unable to print your number.";
   str_number:str = "123";

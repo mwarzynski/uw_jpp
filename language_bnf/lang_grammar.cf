@@ -9,25 +9,29 @@ DStruct.   Decl ::= Struct ;
 DFunction. Decl ::= Function ;
 DVar.      Decl ::= Var ";" ;
 
-DecStruct. Struct ::= "struct" Ident "{" [Var] "}" ;
+DVarS.     Var ::= VarS ;
+DVarE.     Var ::= VarE ;
+
+IStruct. Struct ::= "struct" Ident "{" [VarS] "}" ;
 
 FunOne.  Function ::= "fn" Ident "(" [Var] ")" ":" Type "{" [Stm] "}" ;
 FunStr.  Function ::= "fn" Ident "(" [Var] ")" ":" Ident "{" [Stm] "}" ;
 FunNone. Function ::= "fn" Ident "(" [Var] ")" ":" "{" [Stm] "}" ;
 
-Dec.      Var     ::= Ident ":" Type ;
-DecIdent. Var     ::= Ident ":" Ident ;
-DecMany.  Var     ::= [Ident] ":" Type ;
-DecSet.   Var     ::= Ident ":" Type "=" Exp2 ;
-DecArr.   Var     ::= Ident ":" "[" Type "," Integer "]" ;
+Dec.       VarS     ::= Ident ":" Type ;
+DecMany.   VarS     ::= [Ident] ":" Type ;
+DecSet.    VarS     ::= Ident ":" Type "=" Exp2 ;
+DecStruct. VarE     ::= Ident ":" Ident ;
+DecArr.    VarE     ::= Ident ":" "[" Type "," Integer "]" ;
+DecDict.   VarE     ::= Ident ":" "{" Type "->" Type "}" ; 
 
-DecArrSet.    Var   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
-DecArrSetMul. Var   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
+DecArrSet.        VarE   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
+DecArrSetMul.     VarE   ::= Ident ":" "[" Type "*" Integer "]"; 
+DecArrSetMulInit. VarE   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
 
-terminator Function "" ;
 terminator Stm "" ;
-terminator Decl "" ;
-terminator Var "" ;
+terminator VarS "" ;
+terminator VarE "" ;
 
 separator  Decl "" ;
 separator  Var "," ;
@@ -38,7 +42,7 @@ SDecl.   Stm ::= Var ";"  ;
 SExp.    Stm ::= Exp ";" ;
 SBlock.  Stm ::= "{" [Stm] "}" ;
 SWhile.  Stm ::= "while"  Exp  Stm ;
-SForD.    Stm ::= "for" Decl "," Exp "," Exp Stm ;
+SForD.    Stm ::= "for" VarS "," Exp "," Exp Stm ;
 SForE.    Stm ::= "for" Exp "," Exp "," Exp Stm ;
 SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;

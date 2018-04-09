@@ -1,6 +1,6 @@
 
 // funkcje zwracajace wartosc
-main() : i32 {
+fn main() : i32 {
   n:i32 = 0;
 
   i:i32;
