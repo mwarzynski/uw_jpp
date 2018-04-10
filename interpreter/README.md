@@ -71,7 +71,7 @@ for j = 1, j < 10, j++ {
 } 
 ```
 
-## break, continue
+## Break, continue
 
 Inside `for` and `while` standard implementation.
 Outside these Keywords produce an error.
