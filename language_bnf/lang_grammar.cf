@@ -13,9 +13,9 @@ DVarE.     Var ::= VarE ;
 
 IStruct. Struct ::= "struct" Ident "{" [VarS] "}" ;
 
-FunOne.  Function ::= "fn" Ident "(" [Var] ")" ":" Type "{" [Stm] "}" ;
-FunStr.  Function ::= "fn" Ident "(" [Var] ")" ":" Ident "{" [Stm] "}" ;
-FunNone. Function ::= "fn" Ident "(" [Var] ")" ":" "{" [Stm] "}" ;
+FunOne.  Function ::= "fn" Ident "(" [Var] ")" "->" Type "{" [Stm] "}" ;
+FunStr.  Function ::= "fn" Ident "(" [Var] ")" "->" Ident "{" [Stm] "}" ;
+FunNone. Function ::= "fn" Ident "(" [Var] ")" "->" "{" [Stm] "}" ;
 
 Dec.       VarS     ::= Ident ":" Type ;
 DecMany.   VarS     ::= [Ident] ":" Type ;

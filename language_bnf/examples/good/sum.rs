@@ -1,4 +1,4 @@
-fn sum(i:i32, j:i32) : {
+fn sum(i:i32, j:i32) -> {
   k:i32;
   r:i32 = 0;
   for k = 0, k < 10, k++ {
@@ -10,7 +10,7 @@ fn sum(i:i32, j:i32) : {
   return r;
 }
 
-fn main() : i32 {
+fn main() -> i32 {
   print(sum(10, 100)); 
 }
 

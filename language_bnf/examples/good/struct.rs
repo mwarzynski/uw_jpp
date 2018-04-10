@@ -4,17 +4,17 @@ struct Rectangle {
   y: i32
 }
 
-fn rectangle_area(r: Rectangle) : i32 {
+fn rectangle_area(r: Rectangle) -> i32 {
   return r.x * r.y;
 }
 
-fn rectangle_new(x,y: i32) : Rectangle {
+fn rectangle_new(x,y: i32) -> Rectangle {
   r: Rectangle;
   r.x = x;
   r.y = y;
 }
 
-fn main() : i32 {
+fn main() -> i32 {
   r = rectangle_new(10, 20);
   print(rectangle_area(r));
 

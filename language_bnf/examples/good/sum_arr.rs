@@ -1,4 +1,4 @@
-fn main() : i32 {
+fn main() -> i32 {
   values: [i32*100] = [ 1, .. ];
 
   i:i32;

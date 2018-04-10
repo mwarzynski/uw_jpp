@@ -1,15 +1,15 @@
 
 // array as an argument does not work
-nope1(i: [i32]) : bool {
+nope1(i: [i32]) -> bool {
   return false;
 }
 
 // array as a return value does not work
-nope2() : [i32*2] {
+nope2() -> [i32*2] {
   return [1,2];
 }
 
-nope3() : bool {
+nope3() -> bool {
   if false {
     // goto, really?
     goto main; // nope, it's not the kernel space
@@ -18,7 +18,7 @@ nope3() : bool {
   }
 }
 
-nope4() : {
+nope4() -> {
   text:str = "yay";
   if text == "y" {
     return false;
@@ -28,7 +28,7 @@ nope4() : {
   return true;
 }
 
-nope5() : {
+nope5() -> {
   i:i32 = 1;
   j:i32 = 2;
 
@@ -37,12 +37,12 @@ nope5() : {
   // there is only support for += and -=
 }
 
-nope6() : {
+nope6() -> {
   // should fail before execution
   i:i32 = "lol";
 }
 
-nope7() : {
+nope7() -> {
   del:i32 = 0;
   val:i32 = 1029301238;
 
@@ -56,13 +56,13 @@ nope7() : {
   return val / del;
 }
 
-nope8() : {
+nope8() -> {
   // cannot initialize array with more
   // than one value
   i: [i32*10] = [1, 2, .. ];
 }
 
-nope9() : {
+nope9() -> {
   // continue/break should be only used
   // inside for/while
   continue;
@@ -71,7 +71,7 @@ nope9() : {
   // but, return anywhere inside the function is okay
 }
 
-nope10() : {
+nope10() -> {
   j:i32 = 1;
   {
     // local scope
