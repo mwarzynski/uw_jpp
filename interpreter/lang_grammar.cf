@@ -52,42 +52,50 @@ SReturn.       Stm ::= "return" ";" ;
 SJContinue. Stm ::= "continue" ";" ;
 SJBreak.    Stm ::= "break" ";" ;
 
-EAss.    Exp  ::= Ident "=" Exp2 ;
-EAssArr. Exp  ::= Ident "[" Exp3 "]" "=" Exp2 ;
+EAss.    Exp  ::= Ident "=" Exp3 ;
+EAssArr. Exp  ::= Ident "[" Exp6 "]" "=" Exp3 ;
 EAssStr. Exp  ::= Ident "." Ident "=" Exp2 ;
 
-EEPlus.  Exp1 ::= Ident "+=" Exp2 ;
-EEMinus. Exp1 ::= Ident "-=" Exp2 ;
-EPPlus.  Exp1 ::= Ident "++" ;
-EMMinus. Exp1 ::= Ident "--" ;
+EEPlus.  Exp2 ::= Ident "+=" Exp2 ;
+EEMinus. Exp2 ::= Ident "-=" Exp2 ;
 
-ElOr.    Exp2  ::= Exp2 "||" Exp2;
-ElAnd.   Exp2  ::= Exp2 "&&" Exp2;
+ElOr.    Exp3 ::= Exp3 "||" Exp3;
+ElAnd.   Exp3 ::= Exp3 "&&" Exp3;
 
-ELt.     Exp2 ::= Exp2 "<" Exp2 ;
-ELt2.    Exp2 ::= Exp2 "<" Exp2 "<" Exp2 ;
-EGt.     Exp2 ::= Exp2 ">" Exp2 ;
-EGt2.    Exp2 ::= Exp2 ">" Exp2 ">" Exp2 ;
-EEq.     Exp2 ::= Exp2 "==" Exp2 ;
-ENEq.    Exp2 ::= Exp2 "!=" Exp2 ;
-EAdd.    Exp3 ::= Exp3 "+" Exp3 ;
-ESub.    Exp3 ::= Exp3 "-" Exp3 ;
-EMul.    Exp3 ::= Exp3 "*" Exp3 ;
-EDiv.    Exp3 ::= Exp3 "/" Exp3 ;
-ENeg.    Exp4 ::= "-" Exp4 ;
-EPos.    Exp4 ::= "+" Exp4 ;
-Call.    Exp4 ::= Ident "(" [Exp] ")" ;
-EVarArr. Exp4 ::= Ident "[" Exp "]" ;
-EStrAtt. Exp4 ::= Ident "." Ident ;
-EVar.    Exp4 ::= Ident ;
-EStr.    Exp4 ::= String ;
-EI32.    Exp4 ::= Integer ;
-EI64.    Exp4 ::= Integer ;
-EF32.    Exp4 ::= Double ;
-EF64.    Exp4 ::= Double ;
-EBool.   Exp4 ::= TokenBool ;
+EEq.     Exp4 ::= Exp4 "==" Exp4 ;
+ENEq.    Exp4 ::= Exp4 "!=" Exp4 ;
 
-coercions Exp 4 ;
+ELt.     Exp5 ::= Exp5 "<" Exp5 ;
+ELtE.    Exp5 ::= Exp5 "<=" Exp5 ;
+ELt2.    Exp5 ::= Exp5 "<" Exp5 "<" Exp5 ;
+EGt.     Exp5 ::= Exp5 ">" Exp5 ;
+EGtE.    Exp5 ::= Exp5 ">=" Exp5 ;
+EGt2.    Exp5 ::= Exp5 ">" Exp5 ">" Exp5 ;
+
+EAdd.    Exp6 ::= Exp6 "+" Exp6 ;
+ESub.    Exp6 ::= Exp6 "-" Exp6 ;
+EMul.    Exp6 ::= Exp6 "*" Exp6 ;
+EDiv.    Exp6 ::= Exp6 "/" Exp6 ;
+
+Call.    Exp7 ::= Ident "(" [Exp] ")" ;
+EVarArr. Exp7 ::= Ident "[" Exp "]" ;
+EStrAtt. Exp7 ::= Ident "." Ident ;
+
+EPPos.   Exp7 ::= Exp7 "++";
+EMMin.   Exp7 ::= Exp7 "--";
+
+ENeg.    Exp7 ::= "-" Exp7 ;
+EPos.    Exp7 ::= "+" Exp7 ;
+
+EVar.    Exp7 ::= Ident ;
+EStr.    Exp7 ::= String ;
+EI32.    Exp7 ::= Integer ;
+EI64.    Exp7 ::= Integer ;
+EF32.    Exp7 ::= Double ;
+EF64.    Exp7 ::= Double ;
+EBool.   Exp7 ::= TokenBool ;
+
+coercions Exp 7 ;
 
 separator Exp "," ;
 
