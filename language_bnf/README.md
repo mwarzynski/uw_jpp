@@ -22,11 +22,24 @@ print(text); // print text to stdout
 ## Arithmetic, comparison
 
 Basic arithmetic, comparisons:
-`+`, `-`, `*`, `/`, `<`, `>`, `==`, `!=`, `is` (python-like)
+ - `+`
+ - `-`
+ - `*`
+ - `/`
+ - `<`
+ - `>`
+ - `==`
+ - `!=`
+
 Basic arithmetic operators:
-`++`, `--`, `+=`, `-=`
+ - `++`
+ - `--`
+ - `+=`
+ - `-=`
+
 Also, there are two fancy three arguments comparisons:
-`x < y < z`, `x > y > z`
+ - `x < y < z`
+ - `x > y > z`
 
 ## If, while
 

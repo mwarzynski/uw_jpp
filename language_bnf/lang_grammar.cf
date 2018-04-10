@@ -70,7 +70,6 @@ EGt.     Exp2 ::= Exp2 ">" Exp2 ;
 EGt2.    Exp2 ::= Exp2 ">" Exp2 ">" Exp2 ;
 EEq.     Exp2 ::= Exp2 "==" Exp2 ;
 ENEq.    Exp2 ::= Exp2 "!=" Exp2 ;
-EEqIs.   Exp2 ::= Exp2 "is" Exp2 ;
 EAdd.    Exp3 ::= Exp3 "+" Exp3 ;
 ESub.    Exp3 ::= Exp3 "-" Exp3 ;
 EMul.    Exp3 ::= Exp3 "*" Exp3 ;
