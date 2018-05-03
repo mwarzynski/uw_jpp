@@ -14,21 +14,17 @@ import AbsGrammar
 
 import ErrM
 
-import Interpreter
+import Interpreter (interpret)
 
 
-type ParseFun a = [Token] -> Err a
+runFile :: FilePath -> IO ()
+runFile f = readFile f >>= run
 
-myLLexer = myLexer
-
-runFile :: (Print a, Show a) => ParseFun a -> FilePath -> IO ()
-runFile p f = readFile f >>= run p
-
-run :: (Print a, Show a) => ParseFun a -> String -> IO ()
-run p s = let ts = myLLexer s in case p ts of
-           Bad _ -> do putStrLn "Parsing code failed."
-                       exitFailure
-           Ok  _ -> interpret ts
+run :: String -> IO ()
+run text = let tokens = myLexer text in case pProgram tokens of
+           Bad _       -> do putStrLn "Parsing code failed."
+                             exitFailure
+           Ok  program -> interpret program
 
 usage :: IO ()
 usage = do
@@ -48,6 +44,6 @@ main = do
   case args of
     ["-h"] -> usage
     ["--help"] -> usage
-    [] -> hGetContents stdin >>= run pProgram
-    "-f":fs -> mapM_ (runFile pProgram) fs
+    [] -> hGetContents stdin >>= run
+    "-f":fs -> mapM_ (runFile) fs
 

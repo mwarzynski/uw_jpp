@@ -15,7 +15,7 @@ import AbsGrammar
 
 import ErrM
 
-interpret :: [Token] -> IO ()
-interpret tokens = putStrLn "ok" 
+interpret :: Program -> IO ()
+interpret program = putStrLn (show program)
 
 
