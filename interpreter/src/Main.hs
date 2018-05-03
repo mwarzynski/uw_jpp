@@ -14,6 +14,7 @@ import AbsGrammar
 
 import ErrM
 
+import Types (analyzeTypes)
 import Interpreter (interpret)
 
 
@@ -22,9 +23,11 @@ runFile f = readFile f >>= run
 
 run :: String -> IO ()
 run text = let tokens = myLexer text in case pProgram tokens of
-           Bad _       -> do putStrLn "Parsing code failed."
-                             exitFailure
-           Ok  program -> interpret program
+           Bad e      -> do putStrLn $ "Parsing error: " ++ e
+                            exitFailure
+           Ok program -> case analyzeTypes program of
+                            Bad e -> putStrLn $ "Type error: " ++ e
+                            _     -> interpret program
 
 usage :: IO ()
 usage = do

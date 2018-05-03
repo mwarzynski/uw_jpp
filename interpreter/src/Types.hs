@@ -1,7 +1,4 @@
-module Interpreter where
-
-import System.IO ( stdin, hGetContents )
-import System.Exit ( exitFailure, exitSuccess )
+module Types where
 
 import Data.Maybe (fromMaybe)
 import Control.Monad
@@ -16,6 +13,6 @@ import AbsGrammar
 import ErrM
 
 
-interpret :: Program -> IO ()
-interpret program = putStrLn "Interpreter"
+analyzeTypes :: Program -> Err Bool
+analyzeTypes ps = return True
 
