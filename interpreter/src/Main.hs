@@ -14,47 +14,33 @@ import AbsGrammar
 
 import ErrM
 
+import Interpreter
+
 
 type ParseFun a = [Token] -> Err a
 
 myLLexer = myLexer
 
-type Verbosity = Int
+runFile :: (Print a, Show a) => ParseFun a -> FilePath -> IO ()
+runFile p f = readFile f >>= run p
 
-putStrV :: Verbosity -> String -> IO ()
-putStrV v s = if v > 1 then putStrLn s else return ()
-
-runFile :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
-runFile v p f = putStrLn f >> readFile f >>= run v p
-
-run :: (Print a, Show a) => Verbosity -> ParseFun a -> String -> IO ()
-run v p s = let ts = myLLexer s in case p ts of
-           Bad s    -> do putStrLn "\nParse              Failed...\n"
-                          putStrV v "Tokens:"
-                          putStrV v $ show ts
-                          putStrLn s
-                          exitFailure
-           Ok  tree -> do putStrLn "\nParse Successful!"
-                          showTree v tree
-                          exitSuccess
-
-showTree :: (Show a, Print a) => Int -> a -> IO ()
-showTree v tree
- = do
-      putStrV v $ "\n[Abstract Syntax]\n\n" ++ show tree
-      putStrV v $ "\n[Linearized tree]\n\n" ++ printTree tree
+run :: (Print a, Show a) => ParseFun a -> String -> IO ()
+run p s = let ts = myLLexer s in case p ts of
+           Bad _ -> do putStrLn "Parsing code failed."
+                       exitFailure
+           Ok  _ -> interpret ts
 
 usage :: IO ()
 usage = do
   putStrLn $ unlines
-    [ "Rust interpreter."
+    [ "The Interpreter."
     , ""
     , "usage: Call with one of the following argument combinations:"
-    , "  --help          Display this help message."
-    , "  (no arguments)  Intepret stdin."
-    , "  -f (file)       Interpret content of file."
+    , "  --help, -h      Display this help message."
+    , "  (no arguments)  Interpret stdin."
+    , "  -f (file)       Interpret content of given file."
     ]
-  exitFailure
+  exitSuccess
 
 main :: IO ()
 main = do
@@ -62,6 +48,6 @@ main = do
   case args of
     ["-h"] -> usage
     ["--help"] -> usage
-    [] -> hGetContents stdin >>= run 2 pProgram
-    "-f":fs -> mapM_ (runFile 0 pProgram) fs
+    [] -> hGetContents stdin >>= run pProgram
+    "-f":fs -> mapM_ (runFile pProgram) fs
 
