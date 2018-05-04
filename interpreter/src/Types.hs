@@ -13,6 +13,6 @@ import AbsGrammar
 import ErrM
 
 
-analyzeTypes :: Program -> Err Bool
-analyzeTypes ps = return True
+typesAnalyze :: Program -> Err Bool
+typesAnalyze ps = return True
 
