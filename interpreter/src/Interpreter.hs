@@ -7,17 +7,25 @@ import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Except
 
+import Control.Monad.Trans
+import Control.Monad.IO.Class
+
 import ErrM
 
 import AbsGrammar
 import PrintGrammar
 
 
-data IVal = IInt Int | IFloat Float | IBool Bool | IString String deriving (Show, Eq, Ord)
+data IVal
+    = IInt Int
+    | IFloat Float
+    | IBool Bool
+    | IString String
+    deriving (Show, Eq, Ord)
 
 type IVar   = Ident
 type IFName = Ident
-type ILoc   = Int
+type ILoc   = Integer
 
 newtype IFun = IFun ([IVal] -> Interpreter IVal)
 
@@ -28,62 +36,88 @@ type IEnvFunc = Map IFName IFun
 type IEnv     = (IEnvVar, IEnvFunc)
 
 type IResult = ExceptT String IO
-type Interpreter a = StateT IStore (ReaderT IEnv IResult) a
+type Interpreter = StateT IStore (ReaderT IEnv IResult)
 
+-- Store & Environment
 
--- setVar :: IVar -> IVal -> Interpreter IEnv
--- setVar var value = do
---     (envVar, envFunc) <- ask
---     return (insert var value envVar, envFunc)
+newLoc :: Interpreter ILoc
+newLoc = do
+    store <- get
+    let loc = if size store > 0 then (fst $ findMax store) + 1 else 1
+    return $ loc
 
-setFunc :: IFName -> IFun -> Interpreter IEnv 
-setFunc fname fun = do
+getVarLoc :: IVar -> Interpreter ILoc
+getVarLoc var = do
+    (env, _) <- ask
+    return $ env ! var
+
+setVarLoc :: IVar -> ILoc -> Interpreter IEnv
+setVarLoc var loc = do
+    (envVar, envFun) <- ask
+    return (insert var loc envVar, envFun)
+
+getLocVal :: ILoc -> Interpreter IVal
+getLocVal loc = do
+    store <- get
+    return (store ! loc)
+
+setLocVal :: ILoc -> IVal -> Interpreter ()
+setLocVal loc val = do
+    store <- get
+    modify (\s -> insert loc val s)
+
+setFun :: IFName -> IFun -> Interpreter IEnv
+setFun fname fun = do
     (envVar, envFun) <- ask
     return (envVar, insert fname fun envFun)
 
+getFun :: IFName -> Interpreter IFun
+getFun fname = do
+    (_, env) <- ask
+    return (env ! fname)
+
 -- Parse
 
-parseVarS :: VarS -> Interpreter IEnv
+parseVarS :: VarS -> Interpreter ([(IVar, IVal)])
 parseVarS vars = case vars of
     Dec name vtype -> do
-        env <- ask
         liftIO $ putStrLn (show name)
         liftIO $ putStrLn (show vtype)
-        return env
-    DecMany names vtype -> do
-        env <- ask
-        liftIO $ putStrLn (show names)
-        liftIO $ putStrLn (show vtype)
-        return env
-    DecSet name vtype exp -> do
-        env <- ask
-        liftIO $ putStrLn (show name)
-        liftIO $ putStrLn (show vtype)
-        liftIO $ putStrLn (show exp)
-        return env
+        return $ [(name, IInt(0))]
 
-parseVarE :: VarE -> Interpreter IEnv
-parseVarE vare = do
-    env <- ask
-    case vare of
-        DecStruct name struct -> return env
-        DecDict name keyType valueType -> return env
-        DecArr name iType values -> return env
-        DecArrMul name iType length -> return env
-        DecArrMulInit name iType length item -> return env
+-- parseVarE :: VarE -> Interpreter ([(IVar, IVal)])
+-- parseVarE vare = do
+--     env <- ask
+--     case vare of
+--         DecStruct name struct -> return env
+--         DecDict name keyType valueType -> return env
+--         DecArr name iType values -> return env
+--         DecArrMul name iType length -> return env
+--         DecArrMulInit name iType length item -> return env
 
-parseVar :: Var -> Interpreter IEnv
+parseVar :: Var -> Interpreter ([(IVar, IVal)])
 parseVar var = case var of
     DVarS vars -> parseVarS vars
-    DVarE vare -> parseVarE vare
+    --DVarE vare -> parseVarE vare
 
-parseVars :: [Var] -> Interpreter IEnv
-parseVars [] = do
+parseBindArgument :: [(IVar, IVal)] -> Interpreter IEnv
+parseBindArgument (t:ts) = do
     env <- ask
-    return env
-parseVars (v:vs) = do
-    env <- parseVar v
-    env2 <- local (const env) $ parseVars vs
+    loc <- newLoc
+    let var = (fst t)
+    let val = (snd t)
+    env1 <- local (const env) $ setVarLoc var loc
+    setLocVal loc val
+    env2 <- local (const env1) $ parseBindArgument ts
+    return env2
+
+parseBindArguments :: [Var] -> [IVal] -> Interpreter IEnv
+parseBindArguments [] [] = ask
+parseBindArguments (var:vars) (val:vals) = do
+    env <- ask
+    pvars <- parseVar var
+    env1 <- local (const env) $ parseBindArgument pvars
+    env2 <- local (const env1) $ parseBindArguments vars vals
     return env2
 
 parseDFunction :: Function -> Interpreter IEnv
@@ -95,12 +129,19 @@ parseDFunction f = case f of
         env <- ask
         return env
     FunNone func args stms -> do
-        executeStatements stms
         env <- ask
-        --let f a = do
-        --    env1 <- local (const env) $ (setArguments args a)
-        --    return $ Int 0
-        return env
+        let fname vals = do
+            -- Bind arguments to passed values.
+            env1 <- local (const env) $ parseBindArguments args vals
+            -- Add function definition to the environment as to allow
+            --  recursive function calling.
+            env2 <- local (const env1) $ setFun func (IFun fname)
+            -- Execute function statements in the new environment.
+            local (const env2) $ executeStatements stms
+            -- Return nothing.
+            return $ IInt 0
+        envS <- local (const env) $ setFun func (IFun fname)
+        return envS
 
 parseDStruct :: Struct -> Interpreter IEnv
 parseDStruct struct = do
@@ -119,9 +160,7 @@ parseDeclaration declaration = case declaration of
     DVar var       -> parseDVar var
 
 parseDeclarations :: [Decl] -> Interpreter IEnv
-parseDeclarations [] = do
-    env <- ask
-    return env
+parseDeclarations [] = ask
 parseDeclarations (d:ds) = do
     envl <- parseDeclaration d
     env <- local (const envl) $ parseDeclarations ds
@@ -175,10 +214,13 @@ executeStatements (s:ss) = do
 interpretProgram :: Program -> Interpreter ()
 interpretProgram (Prog declarations) = do
     env <- parseDeclarations declarations
+    (IFun main) <- local (const env) $ getFun (Ident "main")
+    local (const env) $ main []
     return ()
 
 interpret :: Program -> IResult ()
 interpret program = do
-    runReaderT (execStateT (interpretProgram program) empty) (empty, empty)
+    store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty)
+    -- liftIO $ putStrLn (show store)
     return ()    
 
