@@ -274,6 +274,27 @@ executeEAdd e1 e2 = do
     v <- iValAdd v1 v2
     return v
 
+executeESub :: Exp -> Exp -> Interpreter IVal
+executeESub e1 e2 = do
+    v1 <- executeExp e1
+    v2 <- executeExp e2
+    v <- iValSub v1 v2
+    return v
+
+executeEMul :: Exp -> Exp -> Interpreter IVal
+executeEMul e1 e2 = do
+    v1 <- executeExp e1
+    v2 <- executeExp e2
+    v <- iValMul v1 v2
+    return v
+
+executeEDiv :: Exp -> Exp -> Interpreter IVal
+executeEDiv e1 e2 = do
+    v1 <- executeExp e1
+    v2 <- executeExp e2
+    v <- iValDiv v1 v2
+    return v
+
 executeEEq :: Exp -> Exp -> Interpreter IVal
 executeEEq e1 e2 = do
     v1 <- executeExp e1
@@ -394,6 +415,9 @@ executeExp e = case e of
     EGtE e1 e2 -> executeEGtE e1 e2
     EGt2 e1 e2 e3 -> executeEGt2 e1 e2 e3
     EAdd e1 e2 -> executeEAdd e1 e2
+    ESub e1 e2 -> executeESub e1 e2
+    EMul e1 e2 -> executeEMul e1 e2
+    EDiv e1 e2 -> executeEDiv e1 e2
     ENeg exp -> executeENeg exp
     EStr str -> return $ IString str
     EInt i   -> return $ IInt i
