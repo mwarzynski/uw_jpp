@@ -69,7 +69,10 @@ newLoc = do
 getVarLoc :: IVar -> Interpreter ILoc
 getVarLoc var = do
     (env, _) <- ask
-    return $ env ! var
+    if member var env then
+        return $ env ! var
+    else
+        throwError ("Var " ++ (show var) ++ " does not exit.")
 
 setVarLoc :: IVar -> ILoc -> Interpreter IEnv
 setVarLoc var loc = do
