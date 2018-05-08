@@ -521,6 +521,33 @@ executeSWhile exp stm = do
                 return (env, INothing)
         _ -> throwError ("While got non-bool expression: " ++ (show exp)) 
 
+executeSFor :: Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSFor expc expf stm = do
+    env <- ask
+    val <- executeExp expc
+    case val of
+      IBool b -> do
+          if b then do
+               (env1, jump) <- local (const env) $ executeStatement stm
+               executeExp expf
+               case jump of
+                   IBreak -> return (env1, jump)
+                   IReturn r -> return (env1, jump)
+                   _ -> do
+                       (env2, jump) <- local (const env1) $ executeSFor expc expf stm
+                       return (env2, jump)
+          else
+              return (env, INothing)
+      _ -> throwError ("Could determine for condition: " ++ (show val))
+
+executeSForD :: VarS -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSForD var expcheck expl stm = do
+    env <- ask
+    pvars <- parseVarS var
+    env1 <- local (const env) $ bindValues pvars
+    (env2, jump) <- local (const env1) $ executeSFor expcheck expl stm
+    return (env2, jump)
+
 executeSReturnOne :: Exp -> Interpreter (IEnv, IJump)
 executeSReturnOne exp = do
     env <- ask
@@ -537,6 +564,7 @@ executeStatement s = do
         SIfElse exp stmt stmf -> executeSIfElse exp stmt stmf
         SBlock stms -> executeStatements stms
         SWhile exp stm -> executeSWhile exp stm
+        SForD v e1 e2 s -> executeSForD v e1 e2 s
         SReturnOne exp -> executeSReturnOne exp
         _ -> throwError ("executeStatement: Not implemented: " ++ (show s))
 
