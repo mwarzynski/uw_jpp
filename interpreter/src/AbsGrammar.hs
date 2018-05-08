@@ -85,13 +85,11 @@ data Exp
     | EPos Exp
     | EVar Ident
     | EStr String
-    | EI32 Integer
-    | EI64 Integer
-    | EF32 Double
-    | EF64 Double
+    | EInt Integer
+    | EFloat Double
     | EBool TokenBool
   deriving (Eq, Ord, Show, Read)
 
-data Type = TI32 | TI64 | TF32 | TF64 | TStr | TBool
+data Type = TInt | TFloat | TStr | TBool
   deriving (Eq, Ord, Show, Read)
 
