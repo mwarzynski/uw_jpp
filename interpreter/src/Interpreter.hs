@@ -593,8 +593,6 @@ executeStatement s = do
         SReturn -> executeSReturn
         SJContinue -> executeSJContinue
         SJBreak -> executeSJBreak
-        _ -> throwError ("executeStatement: Not implemented: " ++ (show s))
-
 
 executeStatements :: [Stm] -> Interpreter (IEnv, IJump)
 executeStatements [] = do
