@@ -129,7 +129,6 @@ parseVarS vars = case vars of
             throwError ("Not implemented: " ++ (show vars))
             return $ []
 
-
 -- parseVarE :: VarE -> Interpreter ([(IVar, IVal)])
 -- parseVarE vare = do
 --     env <- ask
@@ -200,21 +199,10 @@ parseDFunction f = case f of
         envS <- local (const env) $ setFun func (IFun fname)
         return envS
 
-parseDStruct :: Struct -> Interpreter IEnv
-parseDStruct struct = do
-    env <- ask
-    return env
-
-parseDVar :: Var -> Interpreter IEnv
-parseDVar var = do
-    env <- ask
-    return env
-
 parseDeclaration :: Decl -> Interpreter IEnv
 parseDeclaration declaration = case declaration of
     DFunction func -> parseDFunction func
-    DStruct struct -> parseDStruct struct
-    DVar var       -> parseDVar var
+    _ -> throwError ("parseDeclaration: Not implemented: " ++ (show declaration))
 
 parseDeclarations :: [Decl] -> Interpreter IEnv
 parseDeclarations [] = ask
@@ -241,6 +229,18 @@ executeExp e = case e of
         f vals
     _ -> throwError ("Not implemented: " ++ (show e))
 
+executeSIf :: Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSIf exp stm = do
+    env <- ask
+    val <- local (const env) $ executeExp exp
+    case val of 
+        IBool b -> do
+            if b then
+                executeStatement stm
+            else
+                return (env, INothing)
+        _ -> throwError ("If got non-bool expression: " ++ (show exp)) 
+
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
@@ -252,10 +252,12 @@ executeStatement s = do
         SExp e -> do
             val <- executeExp e
             return (env, INothing)
+        SIf exp stm -> executeSIf exp stm
+        SBlock stms -> executeStatements stms
         SReturnOne exp -> do
             val <- executeExp exp
             return (env, IReturn val)
-        _ -> throwError ("Not implemented: " ++ (show s))
+        _ -> throwError ("executeStatement: Not implemented: " ++ (show s))
 
 
 executeStatements :: [Stm] -> Interpreter (IEnv, IJump)
