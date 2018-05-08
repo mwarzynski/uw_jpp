@@ -89,21 +89,17 @@ EPos.    Exp7 ::= "+" Exp7 ;
 
 EVar.    Exp7 ::= Ident ;
 EStr.    Exp7 ::= String ;
-EI32.    Exp7 ::= Integer ;
-EI64.    Exp7 ::= Integer ;
-EF32.    Exp7 ::= Double ;
-EF64.    Exp7 ::= Double ;
+EInt.    Exp7 ::= Integer ;
+EFloat.  Exp7 ::= Double ;
 EBool.   Exp7 ::= TokenBool ;
 
 coercions Exp 7 ;
 
 separator Exp "," ;
 
-TI32.  Type ::= "i32" ;
-TI64.  Type ::= "i64" ;
-TF32.  Type ::= "f32" ;
-TF64.  Type ::= "f64" ;
-TStr.  Type ::= "str" ;
-TBool. Type ::= "bool" ;
+TInt.   Type ::= "int" ;
+TFloat. Type ::= "float" ;
+TStr.   Type ::= "str" ;
+TBool.  Type ::= "bool" ;
 
 separator Type  "," ;
