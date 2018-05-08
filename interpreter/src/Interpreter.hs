@@ -446,6 +446,7 @@ executeExp e = case e of
     EPPos var -> executeEPPos var
     EMMin var -> executeEMMin var
     ENeg exp -> executeENeg exp
+    EPos exp -> executeExp exp
     EStr str -> return $ IString str
     EInt i   -> return $ IInt i
     EFloat f -> return $ IFloat f
