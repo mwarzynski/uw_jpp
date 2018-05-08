@@ -79,8 +79,8 @@ data Exp
     | Call Ident [Exp]
     | EVarArr Ident Exp
     | EStrAtt Ident Ident
-    | EPPos Exp
-    | EMMin Exp
+    | EPPos Ident
+    | EMMin Ident
     | ENeg Exp
     | EPos Exp
     | EVar Ident
