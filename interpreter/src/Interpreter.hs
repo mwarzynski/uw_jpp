@@ -6,8 +6,8 @@ import Control.Monad
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Except
-
 import Control.Monad.Trans
+import Control.Monad.Trans.Except
 import Control.Monad.IO.Class
 
 import ErrM
@@ -37,6 +37,26 @@ type IEnv     = (IEnvVar, IEnvFunc)
 
 type IResult = ExceptT String IO
 type Interpreter = StateT IStore (ReaderT IEnv IResult)
+
+-- Initial environment
+
+funcPrint :: [IVal] -> Interpreter IVal
+funcPrint [] = do
+    liftIO $ putStr "\n"
+    return $ (IInt 0)
+funcPrint (v:vs) = do
+    case v of
+        IInt i    -> liftIO $ putStr (show i)
+        IFloat f  -> liftIO $ putStr (show f)
+        IBool b   -> liftIO $ putStr (show b)
+        IString s -> liftIO $ putStr (s)
+    funcPrint vs
+
+initializeEnv :: Interpreter IEnv
+initializeEnv = do
+    env <- ask
+    env1 <- local (const env) $ setFun (Ident "print") (IFun funcPrint)
+    return env1
 
 -- Store & Environment
 
@@ -74,7 +94,10 @@ setFun fname fun = do
 getFun :: IFName -> Interpreter IFun
 getFun fname = do
     (_, env) <- ask
-    return (env ! fname)
+    if member fname env then
+        return (env ! fname)
+    else
+        throwError ("Func " ++ (show fname) ++ " does not exist.")
 
 -- Parse
 
@@ -168,23 +191,13 @@ parseDeclarations (d:ds) = do
 
 -- Exec
 
-executePrint :: [IVal] -> Interpreter ()
-executePrint [] = liftIO $ putStr "\n"
-executePrint (v:vs) = do
-    case v of
-        IInt i    -> liftIO $ putStr (show i)
-        IFloat f  -> liftIO $ putStr (show f)
-        IBool b   -> liftIO $ putStr (show b)
-        IString s -> liftIO $ putStr (s)
-    executePrint vs
-
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EStr str -> return $ IString str
     Call func exps -> do
+        (IFun f) <- getFun func
         vals <- mapM executeExp exps
-        executePrint vals
-        return $ IInt 0
+        f vals
 
 executeStatement :: Stm -> Interpreter IEnv
 executeStatement s = do
@@ -213,9 +226,10 @@ executeStatements (s:ss) = do
 
 interpretProgram :: Program -> Interpreter ()
 interpretProgram (Prog declarations) = do
-    env <- parseDeclarations declarations
-    (IFun main) <- local (const env) $ getFun (Ident "main")
-    local (const env) $ main []
+    env <- initializeEnv
+    env1 <- local (const env) $ parseDeclarations declarations
+    (IFun main) <- local (const env1) $ getFun (Ident "main")
+    local (const env1) $ main []
     return ()
 
 interpret :: Program -> IResult ()
