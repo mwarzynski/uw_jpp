@@ -398,6 +398,31 @@ executeEGt2 e1 e2 e3 = do
     (IBool b2) <- iValLt v3 v2
     return $ IBool (b1 && b2)
 
+executeEPPos :: IVar -> Interpreter IVal
+executeEPPos var = do
+    loc <- getVarLoc var
+    val <- getLocVal loc
+    case val of
+        IInt v -> do
+            setLocVal loc (IInt (v + 1))
+            return $ IBool True
+        IFloat f -> do
+            setLocVal loc (IFloat (f + 1.0))
+            return $ IBool True
+        _ -> throwError ("Invalid type for ++ operation: " ++ (show val))
+
+executeEMMin :: IVar -> Interpreter IVal
+executeEMMin var = do
+    loc <- getVarLoc var
+    val <- getLocVal loc
+    case val of
+        IInt v -> do
+            setLocVal loc (IInt (v - 1))
+            return $ IBool True
+        IFloat f -> do
+            setLocVal loc (IFloat (f - 1.0))
+            return $ IBool True
+        _ -> throwError ("Invalid type for ++ operation: " ++ (show val))
 
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
@@ -418,6 +443,8 @@ executeExp e = case e of
     ESub e1 e2 -> executeESub e1 e2
     EMul e1 e2 -> executeEMul e1 e2
     EDiv e1 e2 -> executeEDiv e1 e2
+    EPPos var -> executeEPPos var
+    EMMin var -> executeEMMin var
     ENeg exp -> executeENeg exp
     EStr str -> return $ IString str
     EInt i   -> return $ IInt i
