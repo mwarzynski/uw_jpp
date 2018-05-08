@@ -1,17 +1,17 @@
 
-fn fib(n:i64 = 5, a:i64 = 1, b:i64 = 1) -> i64 {
+fn fib(n:int = 5, a:int = 1, b:int = 1) -> int {
   if 0 < n {
     return fib(n-1, b, a+b);
   }
   return a+b;
 }
 
-fn fib_better(n:i32 = 5) -> i32 {
-  a: i32 = 1;
-  b: i32 = 1;
-  c: i32;
+fn fib_better(n:int = 5) -> int {
+  a: int = 1;
+  b: int = 1;
+  c: int;
 
-  for i:i32 = 0, i < n, i++ {
+  for i:int = 0, i < n, i++ {
     if a + b < 0 {
       // break and continue keywords
       break; // overflow
@@ -25,7 +25,7 @@ fn fib_better(n:i32 = 5) -> i32 {
   return b;
 }
 
-fn magic(a,b : i64) -> i64 {
+fn magic(a,b : int) -> int {
   return a;
 }
 

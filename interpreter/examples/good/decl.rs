@@ -1,16 +1,16 @@
-fn main() -> i32 {
+fn main() -> int {
   // string 
   err:str = "Unable to print your number.";
   str_number:str = "123";
 
   // at least two types
   is_number:bool = true;
-  number:i32;
+  number:int;
  
-  // str -> i32
-  number = parse_i32(str_number);
+  // str -> int
+  number = parse_int(str_number);
 
-  i:i32 = 0;
+  i:int = 0;
   i = (i / 100000) * 10000 + (-10) - (-10);
   is_number = i > 0;
 
