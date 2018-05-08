@@ -213,6 +213,47 @@ parseDeclarations (d:ds) = do
 
 -- Exec
 
+executeEAss :: IVar -> Exp -> Interpreter IVal
+executeEAss var exp = do
+    loc <- getVarLoc var
+    val <- executeExp exp
+    setLocVal loc val
+    return (IInt 1)
+
+executeEAdd :: Exp -> Exp -> Interpreter IVal
+executeEAdd e1 e2 = do
+    v1 <- executeExp e1
+    v2 <- executeExp e2
+    case v1 of
+      IInt i1 -> case v2 of
+        IInt i2 -> return $ IInt (i1 + i2)
+        _ -> throwError ("Adding different types: " ++ (show v1) ++ " + " ++ (show v2))
+      IFloat f1 -> case v2 of
+        IFloat f2 -> return $ IFloat (f1 + f2)
+        _ -> throwError ("Adding different types: " ++ (show v1) ++ " + " ++ (show v2))
+      IString s1 -> case v2 of
+        IString s2 -> return $ IString (s1 ++ s2)
+        _ -> throwError ("Adding different types: " ++ (show v1) ++ " + " ++ (show v2))
+      IBool b1 -> throwError ("Adding boolean types.")
+
+executeEEq :: Exp -> Exp -> Interpreter IVal
+executeEEq e1 e2 = do
+    v1 <- executeExp e1
+    v2 <- executeExp e2
+    case v1 of
+        IInt i1 -> case v2 of
+            IInt i2 -> if i1 == i2 then return $ IBool True else return $ IBool False
+            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        IFloat f1 -> case v2 of
+            IFloat f2 -> if f1 == f2 then return $ IBool True else return $ IBool False
+            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        IString s1 -> case v2 of
+            IString s2 -> if s1 == s2 then return $ IBool True else return $ IBool False
+            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        IBool b1 -> case v2 of
+            IBool b2 -> if b1 == b2 then return $ IBool True else return $ IBool False
+            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EStr str -> return $ IString str
@@ -223,6 +264,9 @@ executeExp e = case e of
         loc <- getVarLoc var
         val <- getLocVal loc
         return $ val
+    EAss var exp -> executeEAss var exp
+    EAdd e1 e2 -> executeEAdd e1 e2
+    EEq e1 e2 -> executeEEq e1 e2
     Call func exps -> do
         (IFun f) <- getFun func
         vals <- mapM executeExp exps
@@ -253,6 +297,23 @@ executeSIfElse exp stmt stmf = do
                 executeStatement stmf
         _ -> throwError ("If got non-bool expression: " ++ (show exp)) 
 
+executeSWhile :: Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSWhile exp stm = do
+    env <- ask
+    val <- local (const env) $ executeExp exp
+    case val of 
+        IBool b -> do
+            if b then do
+                (env1, val) <- local (const env) $ executeStatement stm
+                case val of
+                    INothing -> local (const env1) $ executeSWhile exp stm
+                    IContinue -> local (const env1) $ executeSWhile exp stm
+                    IBreak -> return (env1, INothing)
+                    IReturn v -> return (env1, val)
+            else
+                return (env, INothing)
+        _ -> throwError ("While got non-bool expression: " ++ (show exp)) 
+
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
@@ -267,6 +328,7 @@ executeStatement s = do
         SIf exp stm -> executeSIf exp stm
         SIfElse exp stmt stmf -> executeSIfElse exp stmt stmf
         SBlock stms -> executeStatements stms
+        SWhile exp stm -> executeSWhile exp stm
         SReturnOne exp -> do
             val <- executeExp exp
             return (env, IReturn val)
