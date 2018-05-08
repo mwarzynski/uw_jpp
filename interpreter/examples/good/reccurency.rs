@@ -1,5 +1,5 @@
 
-fn sum(a:i32 = 1, n:i32 = 5) -> i32 {
+fn sum(a:int = 1, n:int = 5) -> int {
     if n < 0 {
         return a;
     }
