@@ -461,12 +461,6 @@ executeExp e = case e of
         f vals
     _ -> throwError ("Not implemented: " ++ (show e))
 
-executeSFunc :: Function -> Interpreter (IEnv, IJump)
-executeSFunc func = do
-    env <- ask
-    liftIO $ putStrLn ("executeSFunc not implemented: " ++ (show func))
-    return (env, INothing)
-
 executeSDecl :: Var -> Interpreter (IEnv, IJump)
 executeSDecl var = do
     env <- ask
@@ -576,10 +570,17 @@ executeSJBreak = do
     env <- ask
     return (env, IBreak)
 
+executeSFunc :: Function -> Interpreter (IEnv, IJump)
+executeSFunc func = do
+    env <- ask
+    env1 <- local (const env) $ parseDFunction func
+    return (env1, INothing)
+
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
     case s of
+        SFunc func -> executeSFunc func
         SDecl var -> executeSDecl var
         SExp e -> executeSExp e
         SIf exp stm -> executeSIf exp stm
