@@ -50,7 +50,6 @@ data Stm
     | SIf Exp Stm
     | SIfElse Exp Stm Stm
     | SReturnOne Exp
-    | SReturnStruct Ident
     | SReturn
     | SJContinue
     | SJBreak

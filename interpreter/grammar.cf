@@ -46,7 +46,6 @@ SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;
 
 SReturnOne.    Stm ::= "return" Exp ";" ;
-SReturnStruct. Stm ::= "return" Ident ";" ;
 SReturn.       Stm ::= "return" ";" ;
 
 SJContinue. Stm ::= "continue" ";" ;
