@@ -82,7 +82,10 @@ setVarLoc var loc = do
 getLocVal :: ILoc -> Interpreter IVal
 getLocVal loc = do
     store <- get
-    return (store ! loc)
+    if member loc store then
+        return (store ! loc)
+    else
+        throwError ("There is no value for loc=" ++ (show loc))
 
 setLocVal :: ILoc -> IVal -> Interpreter ()
 setLocVal loc val = do
