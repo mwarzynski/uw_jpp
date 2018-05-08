@@ -6,10 +6,8 @@ Grammar (`lang_grammar.cf`) is based on C-- rules from BNF tutorial.
 ## Types
 
 Supported types:
- - `i32` (integer 32bit)
- - `i64` (integer 64bit)
- - `f32` (float 32bit)
- - `f64` (float 64bit)
+ - `int`   (integer)
+ - `float` (float)
  - `str` (string)
  - `bool` (boolean)
 
