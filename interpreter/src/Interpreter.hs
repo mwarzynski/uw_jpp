@@ -54,11 +54,25 @@ funcPrint (v:vs) = do
         IString s -> liftIO $ putStr (s)
     funcPrint vs
 
+funcParseInt :: [IVal] -> Interpreter IVal
+funcParseInt [] = throwError "parse_int requires a string argument"
+funcParseInt (v:vs) = do
+    env <- ask
+    if (length vs) > 0 then do
+        throwError "parse_int requires only one argument"
+    else do
+        case v of
+            IString s -> do
+                let n = read s
+                return $ (IInt n)
+            _ -> throwError "parse_int requires string argument"
+
 initializeEnv :: Interpreter IEnv
 initializeEnv = do
     env <- ask
     env1 <- local (const env) $ setFun (Ident "print") (IFun funcPrint)
-    return env1
+    env2 <- local (const env1) $ setFun (Ident "parse_int") (IFun funcParseInt)
+    return env2
 
 -- Store & Environment
 
