@@ -561,6 +561,11 @@ executeSReturnOne exp = do
     val <- executeExp exp
     return (env, IReturn val)
 
+executeSReturn :: Interpreter (IEnv, IJump)
+executeSReturn = do
+    env <- ask
+    return (env, IReturn (IInt 0))
+
 executeSJContinue :: Interpreter (IEnv, IJump)
 executeSJContinue = do
     env <- ask
@@ -584,6 +589,7 @@ executeStatement s = do
         SForD v e1 e2 s -> executeSForD v e1 e2 s
         SForE e e1 e2 s -> executeSForE e e1 e2 s
         SReturnOne exp -> executeSReturnOne exp
+        SReturn -> executeSReturn
         SJContinue -> executeSJContinue
         SJBreak -> executeSJBreak
         _ -> throwError ("executeStatement: Not implemented: " ++ (show s))
