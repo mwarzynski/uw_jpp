@@ -17,8 +17,8 @@ import PrintGrammar
 
 
 data IVal
-    = IInt Int
-    | IFloat Float
+    = IInt Integer
+    | IFloat Double
     | IBool Bool
     | IString String
     deriving (Show, Eq, Ord)
@@ -72,7 +72,7 @@ getVarLoc var = do
     if member var env then
         return $ env ! var
     else
-        throwError ("Var " ++ (show var) ++ " does not exit.")
+        throwError ("Variable " ++ (show var) ++ " does not exit.")
 
 setVarLoc :: IVar -> ILoc -> Interpreter IEnv
 setVarLoc var loc = do
@@ -107,12 +107,26 @@ getFun fname = do
 
 -- Parse
 
+defaultTypeValue :: Type -> IVal
+defaultTypeValue TInt = IInt 0
+defaultTypeValue TFloat = IFloat 0.0
+defaultTypeValue TStr = IString ""
+defaultTypeValue TBool = IBool False
+
+parseTokenBool :: TokenBool -> Bool
+parseTokenBool token = if token == (TokenBool "true") then True else False
+
 parseVarS :: VarS -> Interpreter ([(IVar, IVal)])
 parseVarS vars = case vars of
-    Dec name vtype -> do
-        liftIO $ putStrLn (show name)
-        liftIO $ putStrLn (show vtype)
-        return $ [(name, IInt(0))]
+        Dec name vtype -> do
+            return $ [(name, (defaultTypeValue vtype))]
+        DecSet name vtype exp -> do
+            val <- executeExp exp
+            return $ [(name, val)]
+        _ -> do
+            throwError ("Not implemented: " ++ (show vars))
+            return $ []
+
 
 -- parseVarE :: VarE -> Interpreter ([(IVar, IVal)])
 -- parseVarE vare = do
@@ -129,15 +143,16 @@ parseVar var = case var of
     DVarS vars -> parseVarS vars
     --DVarE vare -> parseVarE vare
 
-parseBindArgument :: [(IVar, IVal)] -> Interpreter IEnv
-parseBindArgument (t:ts) = do
+bindValues :: [(IVar, IVal)] -> Interpreter IEnv
+bindValues [] = ask
+bindValues (t:ts) = do
     env <- ask
     loc <- newLoc
     let var = (fst t)
     let val = (snd t)
     env1 <- local (const env) $ setVarLoc var loc
     setLocVal loc val
-    env2 <- local (const env1) $ parseBindArgument ts
+    env2 <- local (const env1) $ bindValues ts
     return env2
 
 parseBindArguments :: [Var] -> [IVal] -> Interpreter IEnv
@@ -145,7 +160,8 @@ parseBindArguments [] [] = ask
 parseBindArguments (var:vars) (val:vals) = do
     env <- ask
     pvars <- parseVar var
-    env1 <- local (const env) $ parseBindArgument pvars
+    -- TODO: acknowledge passed value (val)
+    env1 <- local (const env) $ bindValues pvars
     env2 <- local (const env1) $ parseBindArguments vars vals
     return env2
 
@@ -200,10 +216,20 @@ parseDeclarations (d:ds) = do
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EStr str -> return $ IString str
+    EInt i   -> return $ IInt i
+    EFloat f -> return $ IFloat f
+    EBool b  -> return $ IBool (parseTokenBool b)
+    EVar var -> do
+        loc <- getVarLoc var
+        val <- getLocVal loc
+        return $ val
     Call func exps -> do
         (IFun f) <- getFun func
         vals <- mapM executeExp exps
         f vals
+    _ -> do
+        throwError ("Not implemented: " ++ (show e))
+        return $ IInt 0
 
 executeStatement :: Stm -> Interpreter IEnv
 executeStatement s = do
@@ -212,9 +238,10 @@ executeStatement s = do
         SFunc f -> do
             liftIO $ putStrLn (show f)
             return env
-        SDecl d -> do
-            liftIO $ putStrLn (show d)
-            return env
+        SDecl var -> do
+            pvars <- parseVar var
+            env1 <- local (const env) $ bindValues pvars
+            return env1
         SExp  e -> do
             val <- executeExp e
             return env
@@ -241,6 +268,6 @@ interpretProgram (Prog declarations) = do
 interpret :: Program -> IResult ()
 interpret program = do
     store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty)
-    -- liftIO $ putStrLn (show store)
+    liftIO $ putStrLn (show store)
     return ()    
 
