@@ -461,6 +461,25 @@ executeExp e = case e of
         f vals
     _ -> throwError ("Not implemented: " ++ (show e))
 
+executeSFunc :: Function -> Interpreter (IEnv, IJump)
+executeSFunc func = do
+    env <- ask
+    liftIO $ putStrLn ("executeSFunc not implemented: " ++ (show func))
+    return (env, INothing)
+
+executeSDecl :: Var -> Interpreter (IEnv, IJump)
+executeSDecl var = do
+    env <- ask
+    pvars <- parseVar var
+    env1 <- local (const env) $ bindValues pvars
+    return $ (env1, INothing)
+
+executeSExp :: Exp -> Interpreter (IEnv, IJump)
+executeSExp exp = do
+    env <- ask
+    val <- executeExp exp
+    return (env, INothing)
+
 executeSIf :: Exp -> Stm -> Interpreter (IEnv, IJump)
 executeSIf exp stm = do
     env <- ask
@@ -502,24 +521,23 @@ executeSWhile exp stm = do
                 return (env, INothing)
         _ -> throwError ("While got non-bool expression: " ++ (show exp)) 
 
+executeSReturnOne :: Exp -> Interpreter (IEnv, IJump)
+executeSReturnOne exp = do
+    env <- ask
+    val <- executeExp exp
+    return (env, IReturn val)
+
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
     case s of
-        SDecl var -> do
-            pvars <- parseVar var
-            env1 <- local (const env) $ bindValues pvars
-            return $ (env1, INothing)
-        SExp e -> do
-            val <- executeExp e
-            return (env, INothing)
+        SDecl var -> executeSDecl var
+        SExp e -> executeSExp e
         SIf exp stm -> executeSIf exp stm
         SIfElse exp stmt stmf -> executeSIfElse exp stmt stmf
         SBlock stms -> executeStatements stms
         SWhile exp stm -> executeSWhile exp stm
-        SReturnOne exp -> do
-            val <- executeExp exp
-            return (env, IReturn val)
+        SReturnOne exp -> executeSReturnOne exp
         _ -> throwError ("executeStatement: Not implemented: " ++ (show s))
 
 
