@@ -548,14 +548,23 @@ executeSForD var expcheck expl stm = do
     (env2, jump) <- local (const env1) $ executeSFor expcheck expl stm
     return (env2, jump)
 
--- executeSForE :: Exp -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
-
+executeSForE :: Exp -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSForE ef expc expf stm = do
+    env <- ask
+    executeExp ef
+    (env1, jump) <- local (const env) $ executeSFor expc expf stm
+    return (env1, jump)
 
 executeSReturnOne :: Exp -> Interpreter (IEnv, IJump)
 executeSReturnOne exp = do
     env <- ask
     val <- executeExp exp
     return (env, IReturn val)
+
+executeSJContinue :: Interpreter (IEnv, IJump)
+executeSJContinue = do
+    env <- ask
+    return (env, IContinue)
 
 executeSJBreak :: Interpreter (IEnv, IJump)
 executeSJBreak = do
@@ -573,7 +582,9 @@ executeStatement s = do
         SBlock stms -> executeStatements stms
         SWhile exp stm -> executeSWhile exp stm
         SForD v e1 e2 s -> executeSForD v e1 e2 s
+        SForE e e1 e2 s -> executeSForE e e1 e2 s
         SReturnOne exp -> executeSReturnOne exp
+        SJContinue -> executeSJContinue
         SJBreak -> executeSJBreak
         _ -> throwError ("executeStatement: Not implemented: " ++ (show s))
 
