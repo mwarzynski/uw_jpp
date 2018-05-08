@@ -15,12 +15,12 @@ import ErrM
 import AbsGrammar
 import PrintGrammar
 
-
 data IVal
     = IInt Integer
     | IFloat Double
     | IBool Bool
     | IString String
+    | Null
     deriving (Show, Eq, Ord)
 
 type IVar   = Ident
@@ -37,6 +37,8 @@ type IEnv     = (IEnvVar, IEnvFunc)
 
 type IResult = ExceptT String IO
 type Interpreter = StateT IStore (ReaderT IEnv IResult)
+
+data IJump = INothing | IBreak | IContinue | IReturn IVal deriving (Show)
 
 -- Initial environment
 
@@ -167,12 +169,22 @@ parseBindArguments (var:vars) (val:vals) = do
 
 parseDFunction :: Function -> Interpreter IEnv
 parseDFunction f = case f of
-    FunStr func args rstr stms -> do
-        env <- ask
-        return env
     FunOne func args rtype stms -> do
         env <- ask
-        return env
+        let fname vals = do
+            -- Bind arguments to passed values.
+            env1 <- local (const env) $ parseBindArguments args vals
+            -- Add function definition to the environment as to allow
+            --  recursive function calling.
+            env2 <- local (const env1) $ setFun func (IFun fname)
+            -- Execute function statements in the new environment.
+            (env3, val) <- local (const env2) $ executeStatements stms
+            -- Return one value of standard type.
+            case val of
+                IReturn v -> return $ v
+                _ -> throwError "Function without return value"
+        envS <- local (const env) $ setFun func (IFun fname)
+        return envS
     FunNone func args stms -> do
         env <- ask
         let fname vals = do
@@ -207,9 +219,9 @@ parseDeclaration declaration = case declaration of
 parseDeclarations :: [Decl] -> Interpreter IEnv
 parseDeclarations [] = ask
 parseDeclarations (d:ds) = do
-    envl <- parseDeclaration d
-    env <- local (const envl) $ parseDeclarations ds
-    return env
+    env <- parseDeclaration d
+    env1 <- local (const env) $ parseDeclarations ds
+    return env1
 
 -- Exec
 
@@ -227,32 +239,36 @@ executeExp e = case e of
         (IFun f) <- getFun func
         vals <- mapM executeExp exps
         f vals
-    _ -> do
-        throwError ("Not implemented: " ++ (show e))
-        return $ IInt 0
+    _ -> throwError ("Not implemented: " ++ (show e))
 
-executeStatement :: Stm -> Interpreter IEnv
+executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
     case s of
-        SFunc f -> do
-            liftIO $ putStrLn (show f)
-            return env
         SDecl var -> do
             pvars <- parseVar var
             env1 <- local (const env) $ bindValues pvars
-            return env1
-        SExp  e -> do
+            return $ (env1, INothing)
+        SExp e -> do
             val <- executeExp e
-            return env
+            return (env, INothing)
+        SReturnOne exp -> do
+            val <- executeExp exp
+            return (env, IReturn val)
+        _ -> throwError ("Not implemented: " ++ (show s))
 
 
-executeStatements :: [Stm] -> Interpreter ()
-executeStatements [] = return ()
+executeStatements :: [Stm] -> Interpreter (IEnv, IJump)
+executeStatements [] = do
+    env <- ask
+    return $ (env, INothing)
 executeStatements (s:ss) = do
-    env <- executeStatement s
-    env2 <- local (const env) $ executeStatements ss
-    return ()
+    (env, jump) <- executeStatement s
+    case jump of
+      INothing -> do
+          retval <- local (const env) $ executeStatements ss
+          return retval
+      _ -> return $ (env, jump)
 
 
 -- Interpret
