@@ -297,13 +297,34 @@ executeEEPlus var exp = do
     setLocVal loc nval
     return (nval)
 
+executeEEMinus :: IVar -> Exp -> Interpreter IVal
+executeEEMinus var exp = do
+    val <- executeExp exp
+    loc <- getVarLoc var
+    cval <- getLocVal loc
+    nval <- iValSub cval val
+    setLocVal loc nval
+    return (nval)
+
+executeENeg :: Exp -> Interpreter IVal
+executeENeg e = do
+    val <- executeExp e
+    case val of
+        IInt i -> return $ (IInt (-i))
+        IFloat f -> return $ (IFloat (-f))
+        _ -> throwError ("Invalid value to negate: " ++ (show val))
+
+
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EAss var exp -> executeEAss var exp
     EEPlus var exp -> executeEEPlus var exp
+    EEMinus var exp -> executeEEMinus var exp
     EEq e1 e2 -> executeEEq e1 e2
     ELt e1 e2 -> executeELt e1 e2
+    EGt e1 e2 -> executeELt e2 e1
     EAdd e1 e2 -> executeEAdd e1 e2
+    ENeg exp -> executeENeg exp
     EStr str -> return $ IString str
     EInt i   -> return $ IInt i
     EFloat f -> return $ IFloat f
