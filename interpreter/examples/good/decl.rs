@@ -10,10 +10,11 @@ fn main() -> int {
   // str -> int
   number = parse_int(str_number);
 
-  i:int = 0;
-  i = (i / 100000) * 10000 + (-10) - (-10);
+  i:float = 0;
+  i = 10000 + (-10) - (-10);
   is_number = i > 0;
 
+  print(i);
   while i < 50 {
     number += i;
     i++;
