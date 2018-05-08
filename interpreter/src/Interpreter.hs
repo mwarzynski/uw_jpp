@@ -241,6 +241,18 @@ executeSIf exp stm = do
                 return (env, INothing)
         _ -> throwError ("If got non-bool expression: " ++ (show exp)) 
 
+executeSIfElse :: Exp -> Stm -> Stm -> Interpreter (IEnv, IJump)
+executeSIfElse exp stmt stmf = do
+    env <- ask
+    val <- local (const env) $ executeExp exp
+    case val of 
+        IBool b -> do
+            if b then
+                executeStatement stmt
+            else
+                executeStatement stmf
+        _ -> throwError ("If got non-bool expression: " ++ (show exp)) 
+
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
@@ -253,6 +265,7 @@ executeStatement s = do
             val <- executeExp e
             return (env, INothing)
         SIf exp stm -> executeSIf exp stm
+        SIfElse exp stmt stmf -> executeSIfElse exp stmt stmf
         SBlock stms -> executeStatements stms
         SReturnOne exp -> do
             val <- executeExp exp
