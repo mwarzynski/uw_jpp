@@ -338,6 +338,11 @@ executeElAnd e1 e2 = do
                   _ -> throwError ("Expression is not boolean: " ++ (show v2))
         _ -> throwError ("Expression is not boolean: " ++ (show v1))
 
+executeENEq :: Exp -> Exp -> Interpreter IVal
+executeENEq e1 e2 = do
+    (IBool b) <- executeEEq e1 e2
+    if b then return $ IBool False else return $ IBool True
+
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EAss var exp -> executeEAss var exp
@@ -346,6 +351,7 @@ executeExp e = case e of
     ElOr e1 e2 -> executeElOr e1 e2
     ElAnd e1 e2 -> executeElAnd e1 e2
     EEq e1 e2 -> executeEEq e1 e2
+    ENEq e1 e2 -> executeENEq e1 e2
     ELt e1 e2 -> executeELt e1 e2
     EGt e1 e2 -> executeELt e2 e1
     EAdd e1 e2 -> executeEAdd e1 e2
