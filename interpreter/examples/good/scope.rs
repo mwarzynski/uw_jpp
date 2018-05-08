@@ -1,12 +1,12 @@
 
 // yay, functions may return value
-fn main() -> i32 {
-  n:i32 = 0;
+fn main() -> int {
+  n:int = 0;
 
-  i:i32;
+  i:int;
   for i = 0, i < 100, i++ {
     { // local scope
-      i:i32;
+      i:int;
       for i = 100, i < 105, i++ {
         n -= 50;
       }

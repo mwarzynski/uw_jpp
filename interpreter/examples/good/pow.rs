@@ -1,15 +1,15 @@
 
-fn pow(k:i32, n:i32 = 2) -> i32 {
-  i:i32 = 0;
-  res:i32 = k;
+fn pow(k:int, n:int = 2) -> int {
+  i:int = 0;
+  res:int = k;
   for i = 1, i < n, i++ {
     res = res * k;
   }
   return k;
 }
 
-fn main() -> i32 {
-  i:i32;
+fn main() -> int {
+  i:int;
   for i = 0, i < 11, i++ {
     print(pow(i));
   }
