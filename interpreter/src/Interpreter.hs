@@ -213,6 +213,53 @@ parseDeclarations (d:ds) = do
 
 -- Exec
 
+iValAdd :: IVal -> IVal -> Interpreter IVal
+iValAdd (IInt a) (IInt b) = return $ IInt (a + b)
+iValAdd (IFloat a) (IFloat b) = return $ IFloat (a + b)
+iValAdd (IString a) (IString b) = return $ IString (a ++ b)
+iValAdd v1 v2 = throwError ("Adding invalid types: " ++ (show v1) ++ " + " ++ (show v2))
+
+iValSub :: IVal -> IVal -> Interpreter IVal
+iValSub (IInt a) (IInt b) = return $ IInt (a - b)
+iValSub (IFloat a) (IFloat b) = return $ IFloat (a - b)
+iValSub v1 v2 = throwError ("Subtracting invalid types: " ++ (show v1) ++ " - " ++ (show v2))
+
+iValMul :: IVal -> IVal -> Interpreter IVal
+iValMul (IInt a) (IInt b) = return $ IInt (a * b)
+iValMul (IFloat a) (IFloat b) = return $ IFloat (a * b)
+iValMul v1 v2 = throwError ("Mulitplication of invalid types: " ++ (show v1) ++ " * " ++ (show v2))
+
+iValDiv :: IVal -> IVal -> Interpreter IVal
+iValDiv (IFloat a) (IFloat b) = if b /= 0.0 then
+                                    return $ IFloat (a / b)
+                                else throwError "Division by zero"
+iValDiv v1 v2 = throwError ("Division of invalid types: " ++ (show v1) ++ " / " ++ (show v2))
+
+iValEq :: IVal -> IVal -> Interpreter IVal
+iValEq v1 v2 = case v1 of
+    IInt i1 -> case v2 of
+        IInt i2 -> if i1 == i2 then return $ IBool True else return $ IBool False
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+    IFloat f1 -> case v2 of
+        IFloat f2 -> if f1 == f2 then return $ IBool True else return $ IBool False
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+    IString s1 -> case v2 of
+        IString s2 -> if s1 == s2 then return $ IBool True else return $ IBool False
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+    IBool b1 -> case v2 of
+        IBool b2 -> if b1 == b2 then return $ IBool True else return $ IBool False
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+
+iValLt :: IVal -> IVal -> Interpreter IVal
+iValLt v1 v2 = case v1 of
+    IInt i1 -> case v2 of
+        IInt i2 -> if i1 < i2 then return $ IBool True else return $ IBool False
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+    IFloat f1 -> case v2 of
+        IFloat f2 -> if f1 < f2 then return $ IBool True else return $ IBool False
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+    _ -> throwError ("Comparing not comparable types: " ++ (show v1) ++ " + " ++ (show v2))
+
 executeEAss :: IVar -> Exp -> Interpreter IVal
 executeEAss var exp = do
     loc <- getVarLoc var
@@ -224,52 +271,39 @@ executeEAdd :: Exp -> Exp -> Interpreter IVal
 executeEAdd e1 e2 = do
     v1 <- executeExp e1
     v2 <- executeExp e2
-    case v1 of
-      IInt i1 -> case v2 of
-        IInt i2 -> return $ IInt (i1 + i2)
-        _ -> throwError ("Adding different types: " ++ (show v1) ++ " + " ++ (show v2))
-      IFloat f1 -> case v2 of
-        IFloat f2 -> return $ IFloat (f1 + f2)
-        _ -> throwError ("Adding different types: " ++ (show v1) ++ " + " ++ (show v2))
-      IString s1 -> case v2 of
-        IString s2 -> return $ IString (s1 ++ s2)
-        _ -> throwError ("Adding different types: " ++ (show v1) ++ " + " ++ (show v2))
-      IBool b1 -> throwError ("Adding boolean types.")
+    v <- iValAdd v1 v2
+    return v
 
 executeEEq :: Exp -> Exp -> Interpreter IVal
 executeEEq e1 e2 = do
     v1 <- executeExp e1
     v2 <- executeExp e2
-    case v1 of
-        IInt i1 -> case v2 of
-            IInt i2 -> if i1 == i2 then return $ IBool True else return $ IBool False
-            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
-        IFloat f1 -> case v2 of
-            IFloat f2 -> if f1 == f2 then return $ IBool True else return $ IBool False
-            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
-        IString s1 -> case v2 of
-            IString s2 -> if s1 == s2 then return $ IBool True else return $ IBool False
-            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
-        IBool b1 -> case v2 of
-            IBool b2 -> if b1 == b2 then return $ IBool True else return $ IBool False
-            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+    v <- iValEq v1 v2
+    return v
 
 executeELt :: Exp -> Exp -> Interpreter IVal
 executeELt e1 e2 = do
     v1 <- executeExp e1
     v2 <- executeExp e2
-    case v1 of
-        IInt i1 -> case v2 of
-            IInt i2 -> if i1 < i2 then return $ IBool True else return $ IBool False
-            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
-        IFloat f1 -> case v2 of
-            IFloat f2 -> if f1 < f2 then return $ IBool True else return $ IBool False
-            _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
-        _ -> throwError ("Comparing not comparable types: " ++ (show v1) ++ " + " ++ (show v2))
+    v <- iValLt v1 v2
+    return v
 
+executeEEPlus :: IVar -> Exp -> Interpreter IVal
+executeEEPlus var exp = do
+    val <- executeExp exp
+    loc <- getVarLoc var
+    cval <- getLocVal loc
+    nval <- iValAdd cval val
+    setLocVal loc nval
+    return (nval)
 
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
+    EAss var exp -> executeEAss var exp
+    EEPlus var exp -> executeEEPlus var exp
+    EEq e1 e2 -> executeEEq e1 e2
+    ELt e1 e2 -> executeELt e1 e2
+    EAdd e1 e2 -> executeEAdd e1 e2
     EStr str -> return $ IString str
     EInt i   -> return $ IInt i
     EFloat f -> return $ IFloat f
@@ -278,10 +312,6 @@ executeExp e = case e of
         loc <- getVarLoc var
         val <- getLocVal loc
         return $ val
-    EAss var exp -> executeEAss var exp
-    EAdd e1 e2 -> executeEAdd e1 e2
-    EEq e1 e2 -> executeEEq e1 e2
-    ELt e1 e2 -> executeELt e1 e2
     Call func exps -> do
         (IFun f) <- getFun func
         vals <- mapM executeExp exps
