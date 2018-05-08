@@ -351,6 +351,15 @@ executeELtE e1 e2 = do
     if b then return $ IBool True
     else iValLt v1 v2
 
+executeELt2 :: Exp -> Exp -> Exp -> Interpreter IVal
+executeELt2 e1 e2 e3 = do
+    v1 <- executeExp e1
+    v2 <- executeExp e2
+    v3 <- executeExp e3
+    (IBool b1) <- iValLt v1 v2
+    (IBool b2) <- iValLt v2 v3
+    return $ IBool (b1 && b2)
+
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EAss var exp -> executeEAss var exp
@@ -362,6 +371,7 @@ executeExp e = case e of
     ENEq e1 e2 -> executeENEq e1 e2
     ELt e1 e2 -> executeELt e1 e2
     ELtE e1 e2 -> executeELtE e1 e2
+    ELt2 e1 e2 e3 -> executeELt2 e1 e2 e3
     EGt e1 e2 -> executeELt e2 e1
     EAdd e1 e2 -> executeEAdd e1 e2
     ENeg exp -> executeENeg exp
