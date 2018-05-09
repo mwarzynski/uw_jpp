@@ -547,10 +547,10 @@ executeSFor expc expf stm = do
               return (env, INothing)
       _ -> throwError ("Could determine for condition: " ++ (show val))
 
-executeSForD :: VarOnly -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSForD :: Var -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
 executeSForD var expcheck expl stm = do
     env <- ask
-    pvar <- parseVarOnly var
+    pvar <- parseVar var
     env1 <- local (const env) $ bindValues [(fst pvar)] [(snd pvar)]
     (env2, jump) <- local (const env1) $ executeSFor expcheck expl stm
     return (env2, jump)
