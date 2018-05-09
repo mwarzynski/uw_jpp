@@ -596,6 +596,12 @@ executeSFunc func = do
     env1 <- local (const env) $ parseDFunction func
     return (env1, INothing)
 
+executeSBlock :: [Stm] -> Interpreter (IEnv, IJump)
+executeSBlock stms = do
+    env <- ask
+    (env1, val) <- local (const env) $ executeStatements stms
+    return (env, val)
+
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
 executeStatement s = do
     env <- ask
@@ -605,7 +611,7 @@ executeStatement s = do
         SExp e -> executeSExp e
         SIf exp stm -> executeSIf exp stm
         SIfElse exp stmt stmf -> executeSIfElse exp stmt stmf
-        SBlock stms -> executeStatements stms
+        SBlock stms -> executeSBlock stms
         SWhile exp stm -> executeSWhile exp stm
         SForD v e1 e2 s -> executeSForD v e1 e2 s
         SForE e e1 e2 s -> executeSForE e e1 e2 s
