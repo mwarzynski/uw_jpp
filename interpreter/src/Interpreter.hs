@@ -251,26 +251,26 @@ iValEq :: IVal -> IVal -> Interpreter IVal
 iValEq v1 v2 = case v1 of
     IInt i1 -> case v2 of
         IInt i2 -> if i1 == i2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " == " ++ (show v2))
     IFloat f1 -> case v2 of
         IFloat f2 -> if f1 == f2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " == " ++ (show v2))
     IString s1 -> case v2 of
         IString s2 -> if s1 == s2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " == " ++ (show v2))
     IBool b1 -> case v2 of
         IBool b2 -> if b1 == b2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " == " ++ (show v2))
 
 iValLt :: IVal -> IVal -> Interpreter IVal
 iValLt v1 v2 = case v1 of
     IInt i1 -> case v2 of
         IInt i2 -> if i1 < i2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " < " ++ (show v2))
     IFloat f1 -> case v2 of
         IFloat f2 -> if f1 < f2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " + " ++ (show v2))
-    _ -> throwError ("Comparing not comparable types: " ++ (show v1) ++ " + " ++ (show v2))
+        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " < " ++ (show v2))
+    _ -> throwError ("Comparing not comparable types: " ++ (show v1) ++ " < " ++ (show v2))
 
 executeEAss :: IVar -> Exp -> Interpreter IVal
 executeEAss var exp = do
