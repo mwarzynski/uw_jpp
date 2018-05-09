@@ -81,6 +81,7 @@ data Exp
     | EStrAtt Ident Ident
     | EPPos Ident
     | EMMin Ident
+    | EBNeg Exp
     | ENeg Exp
     | EPos Exp
     | EVar Ident
