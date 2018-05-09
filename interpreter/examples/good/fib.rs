@@ -25,7 +25,7 @@ fn fib_better(n:int = 5) -> int {
   return b;
 }
 
-fn magic(a,b : int) -> int {
+fn magic(a: int, b: int) -> int {
   return a;
 }
 
