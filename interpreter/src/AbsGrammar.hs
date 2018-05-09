@@ -15,10 +15,10 @@ data Program = Prog [Decl]
 data Decl = DStruct Struct | DFunction Function | DVar Var
   deriving (Eq, Ord, Show, Read)
 
-data Var = DVarS VarS | DVarE VarE
+data Var = DVarOnly VarOnly | DVarExpr VarExpr
   deriving (Eq, Ord, Show, Read)
 
-data Struct = IStruct Ident [VarS]
+data Struct = IStruct Ident [VarOnly]
   deriving (Eq, Ord, Show, Read)
 
 data Function
@@ -27,15 +27,16 @@ data Function
     | FunNone Ident [Var] [Stm]
   deriving (Eq, Ord, Show, Read)
 
-data VarS
-    = Dec Ident Type | DecMany [Ident] Type | DecSet Ident Type Exp
+data VarOnly
+    = Dec Ident Type
+    | DecStruct Ident Ident
+    | DecDict Ident Type Type
+    | DecArrMul Ident Type Integer
   deriving (Eq, Ord, Show, Read)
 
-data VarE
-    = DecStruct Ident Ident
-    | DecDict Ident Type Type
+data VarExpr
+    = DecSet Ident Type Exp
     | DecArr Ident Type [Exp]
-    | DecArrMul Ident Type Integer
     | DecArrMulInit Ident Type Integer Exp
   deriving (Eq, Ord, Show, Read)
 
@@ -45,7 +46,7 @@ data Stm
     | SExp Exp
     | SBlock [Stm]
     | SWhile Exp Stm
-    | SForD VarS Exp Exp Stm
+    | SForD VarOnly Exp Exp Stm
     | SForE Exp Exp Exp Stm
     | SIf Exp Stm
     | SIfElse Exp Stm Stm

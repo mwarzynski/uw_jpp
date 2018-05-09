@@ -8,30 +8,29 @@ DStruct.   Decl ::= Struct ;
 DFunction. Decl ::= Function ;
 DVar.      Decl ::= Var ";" ;
 
-DVarS.     Var ::= VarS ;
-DVarE.     Var ::= VarE ;
+DVarOnly.     Var ::= VarOnly ;
+DVarExpr.     Var ::= VarExpr ;
 
-IStruct. Struct ::= "struct" Ident "{" [VarS] "}" ;
+IStruct. Struct ::= "struct" Ident "{" [VarOnly] "}" ;
 
 FunOne.  Function ::= "fn" Ident "(" [Var] ")" "->" Type "{" [Stm] "}" ;
 FunStr.  Function ::= "fn" Ident "(" [Var] ")" "->" Ident "{" [Stm] "}" ;
 FunNone. Function ::= "fn" Ident "(" [Var] ")" "->" "{" [Stm] "}" ;
 
-Dec.       VarS     ::= Ident ":" Type ;
-DecMany.   VarS     ::= [Ident] ":" Type ;
-DecSet.    VarS     ::= Ident ":" Type "=" Exp2 ;
-DecStruct. VarE     ::= Ident ":" Ident ;
-DecDict.   VarE     ::= Ident ":" "{" Type "->" Type "}" ; 
+Dec.       VarOnly     ::= Ident ":" Type ;
+DecSet.    VarExpr     ::= Ident ":" Type "=" Exp2 ;
+DecStruct. VarOnly     ::= Ident ":" Ident ;
+DecDict.   VarOnly     ::= Ident ":" "{" Type "->" Type "}" ;
 
-DecArr.        VarE   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]"; 
-DecArrMul.     VarE   ::= Ident ":" "[" Type "*" Integer "]"; 
-DecArrMulInit. VarE   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]"; 
+DecArr.        VarExpr   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]";
+DecArrMul.     VarOnly   ::= Ident ":" "[" Type "*" Integer "]";
+DecArrMulInit. VarExpr   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]";
 
 terminator Stm "" ;
 
 separator  Decl "" ;
-separator  VarS "," ;
-separator  VarE "," ;
+separator  VarOnly "," ;
+separator  VarExpr "," ;
 separator  Var  "," ;
 separator  nonempty Ident "," ;
 
@@ -40,7 +39,7 @@ SDecl.   Stm ::= Var ";" ;
 SExp.    Stm ::= Exp ";" ;
 SBlock.  Stm ::= "{" [Stm] "}" ;
 SWhile.  Stm ::= "while"  Exp  Stm ;
-SForD.   Stm ::= "for" VarS "," Exp "," Exp Stm ;
+SForD.   Stm ::= "for" VarOnly "," Exp "," Exp Stm ;
 SForE.   Stm ::= "for" Exp "," Exp "," Exp Stm ;
 SIf.     Stm ::= "if" Exp  Stm ;
 SIfElse. Stm ::= "if" Exp  Stm "else" Stm ;
