@@ -170,6 +170,13 @@ parseBindArguments (var:vars) (val:vals) = do
     env1 <- local (const env) $ bindValues [(fst pvar)] [val]
     env2 <- local (const env1) $ parseBindArguments vars vals
     return env2
+parseBindArguments (var:vars) [] = do
+    env <- ask
+    pvar <- parseVar var
+    env1 <- local (const env) $ bindValues [(fst pvar)] [(snd pvar)]
+    env2 <- local (const env1) $ parseBindArguments vars []
+    return env2
+parseBindArguments a b = throwError ("parseBindArguments: Invalid arguments: Var=" ++ (show a) ++ " Val=" ++ (show b))
 
 parseDFunction :: Function -> Interpreter IEnv
 parseDFunction f = case f of
