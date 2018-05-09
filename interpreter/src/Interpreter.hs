@@ -132,51 +132,42 @@ defaultTypeValue TBool = IBool False
 parseTokenBool :: TokenBool -> Bool
 parseTokenBool token = if token == (TokenBool "true") then True else False
 
-parseVarS :: VarS -> Interpreter ([(IVar, IVal)])
-parseVarS vars = case vars of
+parseVarOnly :: VarOnly -> Interpreter (IVar, IVal)
+parseVarOnly var = case var of
         Dec name vtype -> do
-            return $ [(name, (defaultTypeValue vtype))]
+            return $ (name, defaultTypeValue vtype)
+        _ -> throwError ("VarOnly: Not implemented: " ++ (show var))
+
+parseVarExpr :: VarExpr -> Interpreter (IVar, IVal)
+parseVarExpr var = do
+    env <- ask
+    case var of
         DecSet name vtype exp -> do
             val <- executeExp exp
-            return $ [(name, val)]
-        _ -> do
-            throwError ("Not implemented: " ++ (show vars))
-            return $ []
+            return $ (name, val)
+        _ -> throwError ("VarExpr: Not implemented: " ++ (show var))
 
--- parseVarE :: VarE -> Interpreter ([(IVar, IVal)])
--- parseVarE vare = do
---     env <- ask
---     case vare of
---         DecStruct name struct -> return env
---         DecDict name keyType valueType -> return env
---         DecArr name iType values -> return env
---         DecArrMul name iType length -> return env
---         DecArrMulInit name iType length item -> return env
-
-parseVar :: Var -> Interpreter ([(IVar, IVal)])
+parseVar :: Var -> Interpreter (IVar, IVal)
 parseVar var = case var of
-    DVarS vars -> parseVarS vars
-    --DVarE vare -> parseVarE vare
+    DVarOnly vars -> parseVarOnly vars
+    DVarExpr vare -> parseVarExpr vare
 
-bindValues :: [(IVar, IVal)] -> Interpreter IEnv
-bindValues [] = ask
-bindValues (t:ts) = do
+bindValues :: [IVar] -> [IVal] -> Interpreter IEnv
+bindValues [] [] = ask
+bindValues (var:vars) (val:vals) = do
     env <- ask
     loc <- newLoc
-    let var = (fst t)
-    let val = (snd t)
     env1 <- local (const env) $ setVarLoc var loc
     setLocVal loc val
-    env2 <- local (const env1) $ bindValues ts
+    env2 <- local (const env1) $ bindValues vars vals
     return env2
 
 parseBindArguments :: [Var] -> [IVal] -> Interpreter IEnv
 parseBindArguments [] [] = ask
 parseBindArguments (var:vars) (val:vals) = do
     env <- ask
-    pvars <- parseVar var
-    -- TODO: acknowledge passed value (val)
-    env1 <- local (const env) $ bindValues pvars
+    pvar <- parseVar var
+    env1 <- local (const env) $ bindValues [(fst pvar)] [val]
     env2 <- local (const env1) $ parseBindArguments vars vals
     return env2
 
@@ -478,8 +469,8 @@ executeExp e = case e of
 executeSDecl :: Var -> Interpreter (IEnv, IJump)
 executeSDecl var = do
     env <- ask
-    pvars <- parseVar var
-    env1 <- local (const env) $ bindValues pvars
+    pvar <- parseVar var
+    env1 <- local (const env) $ bindValues [(fst pvar)] [(snd pvar)]
     return $ (env1, INothing)
 
 executeSExp :: Exp -> Interpreter (IEnv, IJump)
@@ -524,7 +515,7 @@ executeSWhile exp stm = do
                     INothing -> local (const env1) $ executeSWhile exp stm
                     IContinue -> local (const env1) $ executeSWhile exp stm
                     IBreak -> return (env1, INothing)
-                    IReturn v -> return (env1, val)
+                    IReturn _ -> return (env1, val)
             else
                 return (env, INothing)
         _ -> throwError ("While got non-bool expression: " ++ (show exp)) 
@@ -548,11 +539,11 @@ executeSFor expc expf stm = do
               return (env, INothing)
       _ -> throwError ("Could determine for condition: " ++ (show val))
 
-executeSForD :: VarS -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
+executeSForD :: VarOnly -> Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
 executeSForD var expcheck expl stm = do
     env <- ask
-    pvars <- parseVarS var
-    env1 <- local (const env) $ bindValues pvars
+    pvar <- parseVarOnly var
+    env1 <- local (const env) $ bindValues [(fst pvar)] [(snd pvar)]
     (env2, jump) <- local (const env1) $ executeSFor expcheck expl stm
     return (env2, jump)
 
