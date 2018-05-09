@@ -1,8 +1,8 @@
-fn sum(i:int, j:int) -> {
-  k:int;
-  r:int = 0;
-  for k = 0, k < 10, k++ {
-    if i / k == 0 {
+fn sum(i:float, j:float) -> float {
+  k:float;
+  r:float = 0.0;
+  for k = 1.0, k < 10.0, k++ {
+    if i / k == 0.0 {
       continue;
     }
     r += (i + j) * k;
@@ -11,6 +11,6 @@ fn sum(i:int, j:int) -> {
 }
 
 fn main() -> int {
-  print(sum(10, 100)); 
+  print(sum(10.0, 100.0)); 
 }
 
