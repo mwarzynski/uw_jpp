@@ -332,6 +332,13 @@ executeEEMinus var exp = do
     setLocVal loc nval
     return (nval)
 
+executeEBNeg :: Exp -> Interpreter IVal
+executeEBNeg e = do
+    val <- executeExp e
+    case val of
+        IBool i -> return $ (IBool (not i))
+        _ -> throwError ("Invalid value (expected boolean) to negate: " ++ (show val))
+
 executeENeg :: Exp -> Interpreter IVal
 executeENeg e = do
     val <- executeExp e
@@ -450,6 +457,7 @@ executeExp e = case e of
     EDiv e1 e2 -> executeEDiv e1 e2
     EPPos var -> executeEPPos var
     EMMin var -> executeEMMin var
+    EBNeg exp -> executeEBNeg exp
     ENeg exp -> executeENeg exp
     EPos exp -> executeExp exp
     EStr str -> return $ IString str
@@ -483,31 +491,31 @@ executeSIf :: Exp -> Stm -> Interpreter (IEnv, IJump)
 executeSIf exp stm = do
     env <- ask
     val <- local (const env) $ executeExp exp
-    case val of 
+    case val of
         IBool b -> do
             if b then
                 executeStatement stm
             else
                 return (env, INothing)
-        _ -> throwError ("If got non-bool expression: " ++ (show exp)) 
+        _ -> throwError ("If got non-bool expression: " ++ (show exp))
 
 executeSIfElse :: Exp -> Stm -> Stm -> Interpreter (IEnv, IJump)
 executeSIfElse exp stmt stmf = do
     env <- ask
     val <- local (const env) $ executeExp exp
-    case val of 
+    case val of
         IBool b -> do
             if b then
                 executeStatement stmt
             else
                 executeStatement stmf
-        _ -> throwError ("If got non-bool expression: " ++ (show exp)) 
+        _ -> throwError ("If got non-bool expression: " ++ (show exp))
 
 executeSWhile :: Exp -> Stm -> Interpreter (IEnv, IJump)
 executeSWhile exp stm = do
     env <- ask
     val <- local (const env) $ executeExp exp
-    case val of 
+    case val of
         IBool b -> do
             if b then do
                 (env1, val) <- local (const env) $ executeStatement stm
@@ -518,7 +526,7 @@ executeSWhile exp stm = do
                     IReturn _ -> return (env1, val)
             else
                 return (env, INothing)
-        _ -> throwError ("While got non-bool expression: " ++ (show exp)) 
+        _ -> throwError ("While got non-bool expression: " ++ (show exp))
 
 executeSFor :: Exp -> Exp -> Stm -> Interpreter (IEnv, IJump)
 executeSFor expc expf stm = do
@@ -626,5 +634,5 @@ interpret :: Program -> IResult ()
 interpret program = do
     store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty)
     liftIO $ putStrLn (show store)
-    return ()    
+    return ()
 
