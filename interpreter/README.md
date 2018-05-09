@@ -60,10 +60,10 @@ Elif is not supported.
 
 ## For
 ```
-for i:i32 = 0, i < 10, i++ {
+for i:int = 0, i < 10, i++ {
   // do something  
 }
-j:i32;
+j:int;
 for j = 1, j < 10, j++ {
   // do something more    
 } 
@@ -78,8 +78,8 @@ Outside these Keywords produce an error.
 
 Function declaration:
 ```
-fn function_name() : i32 {}
-fn function_name2(x,y:i32) : {}
+fn function_name() : int {}
+fn function_name2(a:int) : {}
 ```
 Functions accept as arguments only basic types (built-in types and structs).
 Functions might be declared inside other functions (and then will be
@@ -95,11 +95,11 @@ correct usage of types in provided code.
 There are three ways to declare an array:
 ```
 // array's length will be determined from value
-a: [i32] = [1,2,3,4,5];
+a: [int] = [1,2,3,4,5];
 // array's length is 10
-a: [i32*10];
+a: [int*10];
 // array's length is 10 and all values are 1
-a: [i32*10] = [ 1, .. ];
+a: [int*10] = [ 1, .. ];
 ```
 
 You may access array values in the standard way:
@@ -111,7 +111,7 @@ a[0]; // where 0 is an index
 
 There is only one way to declare dict:
 ```
-scores: {str -> i32}; // creates new, empty dict
+scores: {str -> int}; // creates new, empty dict
 ```
 
 Setting values (for keys) and accessing them is as follows:
@@ -134,8 +134,8 @@ Structs might be initialized anywhere, but their attributes must be of built-in 
 Struct declaration:
 ```
 struct Point {
-  x: i32,
-  y: i32
+  x: int,
+  y: int
 }
 ```
 
