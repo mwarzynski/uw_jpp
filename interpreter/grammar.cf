@@ -82,6 +82,7 @@ EStrAtt. Exp7 ::= Ident "." Ident ;
 EPPos.   Exp7 ::= Ident "++";
 EMMin.   Exp7 ::= Ident "--";
 
+EBNeg.   Exp7 ::= "!" Exp7 ;
 ENeg.    Exp7 ::= "-" Exp7 ;
 EPos.    Exp7 ::= "+" Exp7 ;
 
