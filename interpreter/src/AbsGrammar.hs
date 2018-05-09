@@ -46,7 +46,7 @@ data Stm
     | SExp Exp
     | SBlock [Stm]
     | SWhile Exp Stm
-    | SForD VarOnly Exp Exp Stm
+    | SForD Var Exp Exp Stm
     | SForE Exp Exp Exp Stm
     | SIf Exp Stm
     | SIfElse Exp Stm Stm
