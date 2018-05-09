@@ -19,7 +19,7 @@ fn main() -> int {
   }
 
   // if .. else 
-  if not is_number {
+  if !is_number {
     print(number);
   } else {
     print(err);
