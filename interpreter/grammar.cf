@@ -8,14 +8,20 @@ DStruct.   Decl ::= Struct ;
 DFunction. Decl ::= Function ;
 DVar.      Decl ::= Var ";" ;
 
+DFunOnly.     Function ::= FunctionOnly ;
+DFunExpr.     Function ::= FunctionExpr ;
+
 DVarOnly.     Var ::= VarOnly ;
 DVarExpr.     Var ::= VarExpr ;
 
 IStruct. Struct ::= "struct" Ident "{" [VarOnly] "}" ;
 
-FunOne.  Function ::= "fn" Ident "(" [Var] ")" "->" Type "{" [Stm] "}" ;
-FunStr.  Function ::= "fn" Ident "(" [Var] ")" "->" Ident "{" [Stm] "}" ;
-FunNone. Function ::= "fn" Ident "(" [Var] ")" "->" "{" [Stm] "}" ;
+FunOne.     FunctionOnly ::= "fn" Ident "(" [Var] ")" "->" Type "{" [Stm] "}" ;
+FunStr.     FunctionOnly ::= "fn" Ident "(" [Var] ")" "->" Ident "{" [Stm] "}" ;
+FunNone.    FunctionOnly ::= "fn" Ident "(" [Var] ")" "->" "{" [Stm] "}" ;
+
+FunFun.     FunctionOnly ::= "fn" Ident "(" [Var] ")" "->" "fn" "(" [Var] ")" "{" [Stm] "}" ;
+FunSetFrom. FunctionExpr ::= Ident "=" "fn" Exp7 ;
 
 Dec.       VarOnly     ::= Ident ":" Type ;
 DecSet.    VarExpr     ::= Ident ":" Type "=" Exp2 ;

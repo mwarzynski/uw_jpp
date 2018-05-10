@@ -24,7 +24,7 @@ data IVal
     | ISStruct (Map IVar IVal)
     | IArray ([IVal])
     | Null
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
 
 type IVar   = Ident
 type IFName = Ident
@@ -43,14 +43,14 @@ type IEnv     = (IEnvVar, IEnvFunc, IEnvStruct)
 type IResult = ExceptT String IO
 type Interpreter = StateT IStore (ReaderT IEnv IResult)
 
-data IJump = INothing | IBreak | IContinue | IReturn IVal deriving (Show)
+data IJump = INothing | IBreak | IContinue | IReturn IVal
 
 -- Initial environment
 
 funcPrint :: [IVal] -> Interpreter IVal
 funcPrint [] = do
     liftIO $ putStr "\n"
-    return $ (IInt 0)
+    return $ IInt 0
 funcPrint (v:vs) = do
     case v of
         IInt i    -> liftIO $ putStr (show i)
@@ -70,7 +70,7 @@ funcLen (v:vs) = do
         case v of
             IArray a -> do
                 let len = length a
-                return $ (IInt (toInteger len))
+                return $ IInt (toInteger len)
             _ -> throwError "parse_int requires string argument"
 
 funcParseInt :: [IVal] -> Interpreter IVal
@@ -83,7 +83,7 @@ funcParseInt (v:vs) = do
         case v of
             IString s -> do
                 let n = read s
-                return $ (IInt n)
+                return $ IInt n
             _ -> throwError "parse_int requires string argument"
 
 initializeEnv :: Interpreter IEnv
@@ -246,7 +246,7 @@ parseFunOne func args rtype stms = do
         -- Return one value of standard type.
         case val of
             IReturn v -> return $ v
-            _ -> throwError "Function without return value"
+            _ -> throwError "Function without return value."
     envS <- local (const env) $ setFun func (IFun fname)
     return envS
 
@@ -284,11 +284,26 @@ parseFunStr func args rtype stms = do
     envS <- local (const env) $ setFun func (IFun fname)
     return envS
 
+parseFunFun :: Ident -> [Var] -> [Var] -> [Stm] -> Interpreter IEnv
+parseFunFun func args rargs stms = do
+    env <- ask
+    liftIO $ putStrLn ("Implement FunFun... got: " ++ (show func))
+    return env
+
 parseDFunction :: Function -> Interpreter IEnv
 parseDFunction f = case f of
-    FunOne func args rtype stms -> parseFunOne func args rtype stms
-    FunNone func args stms -> parseFunNone func args stms
-    FunStr func args rtype stms -> parseFunStr func args rtype stms
+    DFunOnly fo -> case fo of
+        FunOne func args rtype stms -> parseFunOne func args rtype stms
+        FunNone func args stms -> parseFunNone func args stms
+        FunStr func args rtype stms -> parseFunStr func args rtype stms
+        FunFun func args rargs stms -> parseFunFun func args rargs stms
+    DFunExpr fr -> case fr of
+        FunSetFrom name funExp -> do
+            case funExp of
+              Call fun args -> do
+                  env <- ask
+                  return env
+              _ -> throwError "You must return a function."
 
 parseIStructAttr :: IVar -> IVal -> IVal -> Interpreter IVal
 parseIStructAttr var val smap = do
@@ -381,7 +396,7 @@ iValLt :: IVal -> IVal -> Interpreter IVal
 iValLt v1 v2 = case v1 of
     IInt i1 -> case v2 of
         IInt i2 -> if i1 < i2 then return $ IBool True else return $ IBool False
-        _ -> throwError ("Comparing different types: " ++ (show v1) ++ " < " ++ (show v2))
+        _ -> throwError ("Error: comparing different types: " ++ (show v1) ++ " < " ++ (show v2))
     IFloat f1 -> case v2 of
         IFloat f2 -> if f1 < f2 then return $ IBool True else return $ IBool False
         _ -> throwError ("Comparing different types: " ++ (show v1) ++ " < " ++ (show v2))
@@ -664,7 +679,9 @@ executeExp e = case e of
     Call func exps -> do
         (IFun f) <- getFun func
         vals <- mapM executeExp exps
-        f vals
+        rval <- f vals
+        return $ rval
+
 
 executeSDecl :: Var -> Interpreter (IEnv, IJump)
 executeSDecl var = do

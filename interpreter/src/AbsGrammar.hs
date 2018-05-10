@@ -15,16 +15,23 @@ data Program = Prog [Decl]
 data Decl = DStruct Struct | DFunction Function | DVar Var
   deriving (Eq, Ord, Show, Read)
 
+data Function = DFunOnly FunctionOnly | DFunExpr FunctionExpr
+  deriving (Eq, Ord, Show, Read)
+
 data Var = DVarOnly VarOnly | DVarExpr VarExpr
   deriving (Eq, Ord, Show, Read)
 
 data Struct = IStruct Ident [VarOnly]
   deriving (Eq, Ord, Show, Read)
 
-data Function
+data FunctionOnly
     = FunOne Ident [Var] Type [Stm]
     | FunStr Ident [Var] Ident [Stm]
     | FunNone Ident [Var] [Stm]
+    | FunFun Ident [Var] [Var] [Stm]
+  deriving (Eq, Ord, Show, Read)
+
+data FunctionExpr = FunSetFrom Ident Exp
   deriving (Eq, Ord, Show, Read)
 
 data VarOnly
