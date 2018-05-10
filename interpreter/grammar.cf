@@ -23,6 +23,7 @@ DecStruct. VarOnly     ::= Ident ":" Ident ;
 DecDict.   VarOnly     ::= Ident ":" "{" Type "->" Type "}" ;
 
 DecArr.        VarExpr   ::= Ident ":" "[" Type "]" "=" "[" [Exp] "]";
+DecStructSet. VarExpr   ::= Ident ":" Ident "=" Exp2 ;
 DecArrMul.     VarOnly   ::= Ident ":" "[" Type "*" Integer "]";
 DecArrMulInit. VarExpr   ::= Ident ":" "[" Type "*" Integer "]" "=" "[" Exp "," ".." "]";
 

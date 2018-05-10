@@ -37,6 +37,7 @@ data VarOnly
 data VarExpr
     = DecSet Ident Type Exp
     | DecArr Ident Type [Exp]
+    | DecStructSet Ident Ident Exp
     | DecArrMulInit Ident Type Integer Exp
   deriving (Eq, Ord, Show, Read)
 
