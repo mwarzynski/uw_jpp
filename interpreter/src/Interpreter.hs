@@ -58,6 +58,7 @@ funcPrint (v:vs) = do
         IBool b   -> liftIO $ putStr (show b)
         IString s -> liftIO $ putStr (s)
         IDict map -> liftIO $ putStr (show map)
+        IArray arr -> liftIO $ putStr (show arr)
     funcPrint vs
 
 funcLen :: [IVal] -> Interpreter IVal
