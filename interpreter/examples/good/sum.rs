@@ -10,7 +10,7 @@ fn sum(i:float, j:float) -> float {
   return r;
 }
 
-fn main() -> int {
+fn main() -> {
   print(sum(10.0, 100.0)); 
 }
 
