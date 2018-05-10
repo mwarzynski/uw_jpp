@@ -22,6 +22,7 @@ data IVal
     | IString String
     | IDict (Map IVal IVal)
     | ISStruct (Map IVar IVal)
+    | IArray ([IVal])
     | Null
     deriving (Show, Eq, Ord)
 
@@ -91,7 +92,7 @@ getVarLoc :: IVar -> Interpreter ILoc
 getVarLoc var = do
     (env, _, _) <- ask
     if member var env then
-        return $ env ! var
+        return $ env Data.Map.! var
     else
         throwError ("Variable " ++ (show var) ++ " does not exit.")
 
@@ -104,7 +105,7 @@ getLocVal :: ILoc -> Interpreter IVal
 getLocVal loc = do
     store <- get
     if member loc store then
-        return (store ! loc)
+        return (store Data.Map.! loc)
     else
         throwError ("There is no value for loc=" ++ (show loc))
 
@@ -122,7 +123,7 @@ getFun :: IFName -> Interpreter IFun
 getFun fname = do
     (_, env, _) <- ask
     if member fname env then
-        return (env ! fname)
+        return (env Data.Map.! fname)
     else
         throwError ("Func " ++ (show fname) ++ " does not exist.")
 
@@ -146,16 +147,22 @@ parseTokenBool token = if token == (TokenBool "true") then True else False
 
 parseVarOnly :: VarOnly -> Interpreter (IVar, IVal)
 parseVarOnly var = case var of
-        Dec name vtype -> do
-            return $ (name, defaultTypeValue vtype)
-        DecDict name keytype valtype -> do
-            return $ (name, (IDict Data.Map.empty))
-        DecStruct name struct -> do
-            (_, _, envStructs) <- ask
-            if (Data.Map.lookup struct envStructs) /= Nothing then
-                return $ (name, envStructs ! struct)
-            else throwError ("Undefined struct: " ++ (show struct))
-        _ -> throwError ("VarOnly: Not implemented: " ++ (show var))
+    Dec name vtype -> do
+        return $ (name, defaultTypeValue vtype)
+    DecDict name keytype valtype -> do
+        return $ (name, (IDict Data.Map.empty))
+    DecStruct name struct -> do
+        (_, _, envStructs) <- ask
+        if (Data.Map.lookup struct envStructs) /= Nothing then
+            return $ (name, envStructs Data.Map.! struct)
+        else throwError ("Undefined struct: " ++ (show struct))
+    _ -> throwError ("VarOnly: Not implemented: " ++ (show var))
+
+parseDecArrMulInit :: Ident -> Type -> Integer -> Exp -> Interpreter (IVar, IVal)
+parseDecArrMulInit name _ length exp = do
+    val <- executeExp exp
+    let len = fromInteger length
+    return $ (name, IArray (replicate len val))
 
 parseVarExpr :: VarExpr -> Interpreter (IVar, IVal)
 parseVarExpr var = do
@@ -167,6 +174,7 @@ parseVarExpr var = do
         DecStructSet name struct exp -> do
             val <- executeExp exp
             return $ (name, val)
+        DecArrMulInit name itype length exp -> parseDecArrMulInit name itype length exp
         _ -> throwError ("VarExpr: Not implemented: " ++ (show var))
 
 parseVar :: Var -> Interpreter (IVar, IVal)
@@ -500,7 +508,14 @@ executeEVarArr var exp = do
     case val of
       IDict m -> do
           key <- executeExp exp
-          return $ m ! key
+          return $ m Data.Map.! key
+      IArray a -> do
+          b <- executeExp exp
+          case b of
+              IInt i -> do
+                  let index = fromInteger i
+                  return $ a !! index
+      _ -> throwError ("Not implemented: " ++ (show val))
 
 executeEPPos :: IVar -> Interpreter IVal
 executeEPPos var = do
@@ -565,7 +580,7 @@ executeEStrAtt var attr = do
     case origVal of
         ISStruct map -> do
             if (Data.Map.lookup attr map) /= Nothing then do
-                return $ map ! attr
+                return $ map Data.Map.! attr
             else throwError ("Invalid attribute for struct: " ++ (show var))
         _ -> throwError ("Invalid struct: " ++ (show var))
 
