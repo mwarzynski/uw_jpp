@@ -247,7 +247,7 @@ parseFunOne func args rtype stms = do
         -- Return one value of standard type.
         case val of
             IReturn v -> return $ v
-            _ -> throwError "Function without return value"
+            _ -> throwError ("Function " ++ (show func) ++ " ended with invalid state.")
     envS <- local (const env) $ setFun func (IFun fname)
     return envS
 
@@ -261,9 +261,11 @@ parseFunNone func args stms = do
             --  recursive function calling.
             env2 <- local (const env1) $ setFun func (IFun fname)
             -- Execute function statements in the new environment.
-            local (const env2) $ executeStatements stms
+            (_, val) <- local (const env2) $ executeStatements stms
             -- Return nothing.
-            return $ IInt 0
+            case val of
+              IReturn _ -> return $ IInt 0
+              _ -> throwError ("Function " ++ (show func) ++ " ended with invalid state.")
         envS <- local (const env) $ setFun func (IFun fname)
         return envS
 
@@ -281,7 +283,7 @@ parseFunStr func args rtype stms = do
         -- Return one value of standard type.
         case val of
             IReturn v -> return $ v
-            _ -> throwError "Function without return value"
+            _ -> throwError ("Function " ++ (show func) ++ " ended with invalid state.")
     envS <- local (const env) $ setFun func (IFun fname)
     return envS
 
