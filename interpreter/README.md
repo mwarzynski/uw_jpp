@@ -55,6 +55,14 @@ if 0 < i < 10 && 0 < j {
 } else {
   return false;
 }
+
+if a {
+    ...    
+} else if b {
+    ...
+} else {
+    ...    
+}
 ```
 Elif is not supported.
 
