@@ -308,11 +308,18 @@ parseDStruct :: Struct -> Interpreter IEnv
 parseDStruct struct = case struct of
     IStruct name vars -> parseIStruct name vars
 
+parseDVar :: Var -> Interpreter IEnv
+parseDVar v = do
+    env <- ask
+    (var, val) <- parseVar v
+    env1 <- local (const env) $ bindValues [var] [val]
+    return env1
+
 parseDeclaration :: Decl -> Interpreter IEnv
 parseDeclaration declaration = case declaration of
     DFunction func -> parseDFunction func
     DStruct struct -> parseDStruct struct
-    _ -> throwError ("parseDeclaration: Not implemented: " ++ (show declaration))
+    DVar var -> parseDVar var
 
 parseDeclarations :: [Decl] -> Interpreter IEnv
 parseDeclarations [] = ask
