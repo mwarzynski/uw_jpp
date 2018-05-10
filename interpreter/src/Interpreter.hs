@@ -820,8 +820,8 @@ interpretProgram (Prog declarations) = do
 
 interpret :: Program -> IResult ()
 interpret program = do
-    liftIO $ putStrLn (show program)
+    -- liftIO $ putStrLn (show program)
     store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty, empty)
-    liftIO $ putStrLn (show store)
+    -- liftIO $ putStrLn (show store)
     return ()
 
