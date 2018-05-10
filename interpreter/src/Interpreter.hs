@@ -175,10 +175,21 @@ parseVarOnly var = case var of
         let len = fromInteger length
         return $ (name, IArray (replicate len val))
 
+expsToArray :: [Exp] -> Interpreter IVal
+expsToArray [] = return $ IArray []
+expsToArray (e:es) = do
+    val <- executeExp e
+    vals <- expsToArray es
+    case vals of
+      IArray a -> return $ IArray ([val] ++ a)
+
 parseVarExpr :: VarExpr -> Interpreter (IVar, IVal)
 parseVarExpr var = do
     env <- ask
     case var of
+        DecArr name itype exps -> do
+            val <- expsToArray exps
+            return $ (name, val)
         DecSet name vtype exp -> do
             val <- executeExp exp
             return $ (name, val)
@@ -189,7 +200,6 @@ parseVarExpr var = do
             val <- executeExp exp
             let len = fromInteger length
             return $ (name, IArray (replicate len val))
-        _ -> throwError ("VarExpr: Not implemented: " ++ (show var))
 
 parseVar :: Var -> Interpreter (IVar, IVal)
 parseVar var = case var of
