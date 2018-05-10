@@ -21,11 +21,13 @@ data IVal
     | IBool Bool
     | IString String
     | IDict (Map IVal IVal)
+    | ISStruct (Map IVar IVal)
     | Null
     deriving (Show, Eq, Ord)
 
 type IVar   = Ident
 type IFName = Ident
+type ISName = Ident
 type ILoc   = Integer
 
 newtype IFun = IFun ([IVal] -> Interpreter IVal)
@@ -34,7 +36,8 @@ type IStore = Map ILoc IVal
 
 type IEnvVar  = Map IVar   ILoc
 type IEnvFunc = Map IFName IFun
-type IEnv     = (IEnvVar, IEnvFunc)
+type IEnvStruct = Map ISName IVal
+type IEnv     = (IEnvVar, IEnvFunc, IEnvStruct)
 
 type IResult = ExceptT String IO
 type Interpreter = StateT IStore (ReaderT IEnv IResult)
@@ -86,7 +89,7 @@ newLoc = do
 
 getVarLoc :: IVar -> Interpreter ILoc
 getVarLoc var = do
-    (env, _) <- ask
+    (env, _, _) <- ask
     if member var env then
         return $ env ! var
     else
@@ -94,8 +97,8 @@ getVarLoc var = do
 
 setVarLoc :: IVar -> ILoc -> Interpreter IEnv
 setVarLoc var loc = do
-    (envVar, envFun) <- ask
-    return (insert var loc envVar, envFun)
+    (envVar, envFun, envStruct) <- ask
+    return (insert var loc envVar, envFun, envStruct)
 
 getLocVal :: ILoc -> Interpreter IVal
 getLocVal loc = do
@@ -112,12 +115,12 @@ setLocVal loc val = do
 
 setFun :: IFName -> IFun -> Interpreter IEnv
 setFun fname fun = do
-    (envVar, envFun) <- ask
-    return (envVar, insert fname fun envFun)
+    (envVar, envFun, envStruct) <- ask
+    return (envVar, insert fname fun envFun, envStruct)
 
 getFun :: IFName -> Interpreter IFun
 getFun fname = do
-    (_, env) <- ask
+    (_, env, _) <- ask
     if member fname env then
         return (env ! fname)
     else
@@ -147,6 +150,11 @@ parseVarOnly var = case var of
             return $ (name, defaultTypeValue vtype)
         DecDict name keytype valtype -> do
             return $ (name, (IDict Data.Map.empty))
+        DecStruct name struct -> do
+            (_, _, envStructs) <- ask
+            if (Data.Map.lookup struct envStructs) /= Nothing then
+                return $ (name, envStructs ! struct)
+            else throwError ("Undefined struct: " ++ (show struct))
         _ -> throwError ("VarOnly: Not implemented: " ++ (show var))
 
 parseVarExpr :: VarExpr -> Interpreter (IVar, IVal)
@@ -154,6 +162,9 @@ parseVarExpr var = do
     env <- ask
     case var of
         DecSet name vtype exp -> do
+            val <- executeExp exp
+            return $ (name, val)
+        DecStructSet name struct exp -> do
             val <- executeExp exp
             return $ (name, val)
         _ -> throwError ("VarExpr: Not implemented: " ++ (show var))
@@ -189,25 +200,26 @@ parseBindArguments (var:vars) [] = do
     return env2
 parseBindArguments a b = throwError ("parseBindArguments: Invalid arguments: Var=" ++ (show a) ++ " Val=" ++ (show b))
 
-parseDFunction :: Function -> Interpreter IEnv
-parseDFunction f = case f of
-    FunOne func args rtype stms -> do
-        env <- ask
-        let fname vals = do
-            -- Bind arguments to passed values.
-            env1 <- local (const env) $ parseBindArguments args vals
-            -- Add function definition to the environment as to allow
-            --  recursive function calling.
-            env2 <- local (const env1) $ setFun func (IFun fname)
-            -- Execute function statements in the new environment.
-            (env3, val) <- local (const env2) $ executeStatements stms
-            -- Return one value of standard type.
-            case val of
-                IReturn v -> return $ v
-                _ -> throwError "Function without return value"
-        envS <- local (const env) $ setFun func (IFun fname)
-        return envS
-    FunNone func args stms -> do
+parseFunOne :: Ident -> [Var] -> Type -> [Stm] -> Interpreter IEnv
+parseFunOne func args rtype stms = do
+    env <- ask
+    let fname vals = do
+        -- Bind arguments to passed values.
+        env1 <- local (const env) $ parseBindArguments args vals
+        -- Add function definition to the environment as to allow
+        --  recursive function calling.
+        env2 <- local (const env1) $ setFun func (IFun fname)
+        -- Execute function statements in the new environment.
+        (env3, val) <- local (const env2) $ executeStatements stms
+        -- Return one value of standard type.
+        case val of
+            IReturn v -> return $ v
+            _ -> throwError "Function without return value"
+    envS <- local (const env) $ setFun func (IFun fname)
+    return envS
+
+parseFunNone :: Ident -> [Var] -> [Stm] -> Interpreter IEnv
+parseFunNone func args stms = do
         env <- ask
         let fname vals = do
             -- Bind arguments to passed values.
@@ -222,9 +234,62 @@ parseDFunction f = case f of
         envS <- local (const env) $ setFun func (IFun fname)
         return envS
 
+parseFunStr :: Ident -> [Var] -> Ident -> [Stm] -> Interpreter IEnv
+parseFunStr func args rtype stms = do
+    env <- ask
+    let fname vals = do
+        -- Bind arguments to passed values.
+        env1 <- local (const env) $ parseBindArguments args vals
+        -- Add function definition to the environment as to allow
+        --  recursive function calling.
+        env2 <- local (const env1) $ setFun func (IFun fname)
+        -- Execute function statements in the new environment.
+        (env3, val) <- local (const env2) $ executeStatements stms
+        -- Return one value of standard type.
+        case val of
+            IReturn v -> return $ v
+            _ -> throwError "Function without return value"
+    envS <- local (const env) $ setFun func (IFun fname)
+    return envS
+
+parseDFunction :: Function -> Interpreter IEnv
+parseDFunction f = case f of
+    FunOne func args rtype stms -> parseFunOne func args rtype stms
+    FunNone func args stms -> parseFunNone func args stms
+    FunStr func args rtype stms -> parseFunStr func args rtype stms
+
+parseIStructAttr :: IVar -> IVal -> IVal -> Interpreter IVal
+parseIStructAttr var val smap = do
+    case smap of
+        ISStruct map -> do
+            let nmap = insert var val map
+            return $ ISStruct nmap
+        _ -> throwError "parseIStructAttr: Provided type is not a struct."
+
+parseIStructAttrs :: [VarOnly] -> IVal -> Interpreter IVal
+parseIStructAttrs (vo:vos) struct = do
+    (name, val) <- parseVarOnly vo
+    struct1 <- parseIStructAttr name val struct
+    struct2 <- parseIStructAttrs vos struct1
+    return $ struct2
+parseIStructAttrs [] s = return $ s
+
+parseIStruct :: Ident -> [VarOnly] -> Interpreter IEnv
+parseIStruct name attrs = do
+    (e, f, env) <- ask
+    a <- parseIStructAttrs attrs (ISStruct Data.Map.empty)
+    case a of
+        ISStruct s -> return (e, f, insert name (ISStruct s) env)
+        _ -> throwError "parseIStruct: Provided type is not a struct."
+
+parseDStruct :: Struct -> Interpreter IEnv
+parseDStruct struct = case struct of
+    IStruct name vars -> parseIStruct name vars
+
 parseDeclaration :: Decl -> Interpreter IEnv
 parseDeclaration declaration = case declaration of
     DFunction func -> parseDFunction func
+    DStruct struct -> parseDStruct struct
     _ -> throwError ("parseDeclaration: Not implemented: " ++ (show declaration))
 
 parseDeclarations :: [Decl] -> Interpreter IEnv
@@ -477,10 +542,38 @@ executeEAssArr var key val = do
             return $ eval
         _ -> throwError ("Invalid variable: " ++ (show var))
 
+executeEAssStr :: Ident -> Ident -> Exp -> Interpreter IVal
+executeEAssStr var key val = do
+    env <- ask
+    loc <- getVarLoc var
+    origVal <- getLocVal loc
+    case origVal of
+        ISStruct map -> do
+            if (Data.Map.lookup key map) /= Nothing then do
+                eval <- (executeExp val)
+                let nmap = ISStruct $ insert key (getVal eval) map
+                setLocVal loc nmap
+                return $ eval
+            else throwError ("Invalid attribute for struct: " ++ (show var))
+        _ -> throwError ("Invalid struct: " ++ (show var))
+
+executeEStrAtt :: Ident -> Ident -> Interpreter IVal
+executeEStrAtt var attr = do
+    env <- ask
+    loc <- getVarLoc var
+    origVal <- getLocVal loc
+    case origVal of
+        ISStruct map -> do
+            if (Data.Map.lookup attr map) /= Nothing then do
+                return $ map ! attr
+            else throwError ("Invalid attribute for struct: " ++ (show var))
+        _ -> throwError ("Invalid struct: " ++ (show var))
+
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EAss var exp -> executeEAss var exp
     EAssArr var key val -> executeEAssArr var key val
+    EAssStr var attr val -> executeEAssStr var attr val
     EEPlus var exp -> executeEEPlus var exp
     EEMinus var exp -> executeEEMinus var exp
     ElOr e1 e2 -> executeElOr e1 e2
@@ -498,6 +591,7 @@ executeExp e = case e of
     EMul e1 e2 -> executeEMul e1 e2
     EDiv e1 e2 -> executeEDiv e1 e2
     EVarArr var exp -> executeEVarArr var exp
+    EStrAtt var attr -> executeEStrAtt var attr
     EPPos var -> executeEPPos var
     EMMin var -> executeEMMin var
     EBNeg exp -> executeEBNeg exp
@@ -515,7 +609,6 @@ executeExp e = case e of
         (IFun f) <- getFun func
         vals <- mapM executeExp exps
         f vals
-    _ -> throwError ("Not implemented: " ++ (show e))
 
 executeSDecl :: Var -> Interpreter (IEnv, IJump)
 executeSDecl var = do
@@ -681,7 +774,7 @@ interpretProgram (Prog declarations) = do
 
 interpret :: Program -> IResult ()
 interpret program = do
-    store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty)
+    store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty, empty)
     liftIO $ putStrLn (show store)
     return ()
 
