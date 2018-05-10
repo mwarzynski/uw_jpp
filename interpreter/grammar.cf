@@ -77,7 +77,7 @@ EMul.    Exp6 ::= Exp6 "*" Exp6 ;
 EDiv.    Exp6 ::= Exp6 "/" Exp6 ;
 
 Call.    Exp7 ::= Ident "(" [Exp] ")" ;
-EVarArr. Exp7 ::= Ident "[" Exp "]" ;
+EVarArr. Exp7 ::= Ident "[" Exp6 "]" ;
 EStrAtt. Exp7 ::= Ident "." Ident ;
 
 EPPos.   Exp7 ::= Ident "++";

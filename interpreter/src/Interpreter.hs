@@ -60,6 +60,19 @@ funcPrint (v:vs) = do
         IDict map -> liftIO $ putStr (show map)
     funcPrint vs
 
+funcLen :: [IVal] -> Interpreter IVal
+funcLen [] = throwError "len requires an array argument"
+funcLen (v:vs) = do
+    env <- ask
+    if (length vs) > 0 then do
+        throwError "len requires only one argument"
+    else do
+        case v of
+            IArray a -> do
+                let len = length a
+                return $ (IInt (toInteger len))
+            _ -> throwError "parse_int requires string argument"
+
 funcParseInt :: [IVal] -> Interpreter IVal
 funcParseInt [] = throwError "parse_int requires a string argument"
 funcParseInt (v:vs) = do
@@ -78,7 +91,8 @@ initializeEnv = do
     env <- ask
     env1 <- local (const env) $ setFun (Ident "print") (IFun funcPrint)
     env2 <- local (const env1) $ setFun (Ident "parse_int") (IFun funcParseInt)
-    return env2
+    env3 <- local (const env2) $ setFun (Ident "len") (IFun funcLen)
+    return env3
 
 -- Store & Environment
 
@@ -156,13 +170,10 @@ parseVarOnly var = case var of
         if (Data.Map.lookup struct envStructs) /= Nothing then
             return $ (name, envStructs Data.Map.! struct)
         else throwError ("Undefined struct: " ++ (show struct))
-    _ -> throwError ("VarOnly: Not implemented: " ++ (show var))
-
-parseDecArrMulInit :: Ident -> Type -> Integer -> Exp -> Interpreter (IVar, IVal)
-parseDecArrMulInit name _ length exp = do
-    val <- executeExp exp
-    let len = fromInteger length
-    return $ (name, IArray (replicate len val))
+    DecArrMul name t length -> do
+        let val = defaultTypeValue t
+        let len = fromInteger length
+        return $ (name, IArray (replicate len val))
 
 parseVarExpr :: VarExpr -> Interpreter (IVar, IVal)
 parseVarExpr var = do
@@ -174,7 +185,10 @@ parseVarExpr var = do
         DecStructSet name struct exp -> do
             val <- executeExp exp
             return $ (name, val)
-        DecArrMulInit name itype length exp -> parseDecArrMulInit name itype length exp
+        DecArrMulInit name itype length exp -> do
+            val <- executeExp exp
+            let len = fromInteger length
+            return $ (name, IArray (replicate len val))
         _ -> throwError ("VarExpr: Not implemented: " ++ (show var))
 
 parseVar :: Var -> Interpreter (IVar, IVal)
@@ -555,7 +569,17 @@ executeEAssArr var key val = do
             let nmap = IDict $ insert (getVal kval) (getVal eval) map
             setLocVal loc nmap
             return $ eval
-        _ -> throwError ("Invalid variable: " ++ (show var))
+        IArray arr -> do
+            value <- (executeExp val)
+            ival <- (executeExp key)
+            case ival of
+                IInt i -> do
+                    let index = fromInteger i
+                    let narr = IArray $ (Prelude.take index arr) ++ [value] ++ (Prelude.drop (index + 1) arr)
+                    setLocVal loc narr
+                    return $ value
+                _ -> throwError ("Expected integer index, got " ++ (show ival))
+        _ -> throwError ("Invalid variable: " ++ (show origVal))
 
 executeEAssStr :: Ident -> Ident -> Exp -> Interpreter IVal
 executeEAssStr var key val = do
@@ -789,6 +813,7 @@ interpretProgram (Prog declarations) = do
 
 interpret :: Program -> IResult ()
 interpret program = do
+    liftIO $ putStrLn (show program)
     store <- runReaderT (execStateT (interpretProgram program) empty) (empty, empty, empty)
     liftIO $ putStrLn (show store)
     return ()
