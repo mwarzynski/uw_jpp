@@ -1,11 +1,6 @@
 
-// array as an argument does not work
-nope1(i: [i32]) -> bool {
-  return false;
-}
-
 // array as a return value does not work
-nope2() -> [i32*2] {
+nope2() -> [int*2] {
   return [1,2];
 }
 
@@ -29,8 +24,8 @@ nope4() -> {
 }
 
 nope5() -> {
-  i:i32 = 1;
-  j:i32 = 2;
+  i:int = 1;
+  j:int = 2;
 
   i *= j; // nope
   i /= j; // nope
@@ -39,12 +34,12 @@ nope5() -> {
 
 nope6() -> {
   // should fail before execution
-  i:i32 = "lol";
+  i:int = "lol";
 }
 
 nope7() -> {
-  del:i32 = 0;
-  val:i32 = 1029301238;
+  del:int = 0;
+  val:int = 1029301238;
 
   // example of handling dynamic errors
   // e.g. division by zero
@@ -59,7 +54,7 @@ nope7() -> {
 nope8() -> {
   // cannot initialize array with more
   // than one value
-  i: [i32*10] = [1, 2, .. ];
+  i: [int*10] = [1, 2, .. ];
 }
 
 nope9() -> {
@@ -72,10 +67,10 @@ nope9() -> {
 }
 
 nope10() -> {
-  j:i32 = 1;
+  j:int = 1;
   {
     // local scope
-    i:i32 = 2;
+    i:int = 2;
   }
 
   // i was declared outside current scope ...
