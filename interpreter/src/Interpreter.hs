@@ -546,7 +546,7 @@ executeEVarArr var exp = do
               IInt i -> do
                   let index = fromInteger i
                   return $ a !! index
-      _ -> throwError ("Not implemented: " ++ (show val))
+      _ -> throwError ("Invalid use of [] for :" ++ (show val))
 
 executeEPPos :: IVar -> Interpreter IVal
 executeEPPos var = do
