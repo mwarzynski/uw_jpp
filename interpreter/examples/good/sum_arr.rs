@@ -1,9 +1,8 @@
-fn main() -> i32 {
-  values: [i32*100] = [ 1, .. ];
+fn main() -> int {
+  values: [int*100] = [ 1, .. ];
 
-  i:i32;
-  r:i32 = 0;
-  for i = 0, i < 100, i++ {
+  r:int = 0;
+  for i: int = 0, i < 100, i++ {
     r += values[i];
   }
 
