@@ -3,6 +3,8 @@
 My language is designed to be similar to Rust.
 Grammar (`lang_grammar.cf`) is based on C-- rules from BNF tutorial.
 
+NOTE: Example files `examples/good/requirementsfor*` should be helpful. ;)
+
 ## Types
 
 Supported types:
