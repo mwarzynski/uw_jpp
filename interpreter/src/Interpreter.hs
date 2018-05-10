@@ -20,6 +20,7 @@ data IVal
     | IFloat Double
     | IBool Bool
     | IString String
+    | IDict (Map IVal IVal)
     | Null
     deriving (Show, Eq, Ord)
 
@@ -52,6 +53,7 @@ funcPrint (v:vs) = do
         IFloat f  -> liftIO $ putStr (show f)
         IBool b   -> liftIO $ putStr (show b)
         IString s -> liftIO $ putStr (s)
+        IDict map -> liftIO $ putStr (show map)
     funcPrint vs
 
 funcParseInt :: [IVal] -> Interpreter IVal
@@ -129,6 +131,13 @@ defaultTypeValue TFloat = IFloat 0.0
 defaultTypeValue TStr = IString ""
 defaultTypeValue TBool = IBool False
 
+getVal :: IVal -> IVal
+getVal (IInt i) = IInt i
+getVal (IFloat f) = IFloat f
+getVal (IBool b) = IBool b
+getVal (IString s) = IString s
+getVal (IDict d) = IDict d
+
 parseTokenBool :: TokenBool -> Bool
 parseTokenBool token = if token == (TokenBool "true") then True else False
 
@@ -136,6 +145,8 @@ parseVarOnly :: VarOnly -> Interpreter (IVar, IVal)
 parseVarOnly var = case var of
         Dec name vtype -> do
             return $ (name, defaultTypeValue vtype)
+        DecDict name keytype valtype -> do
+            return $ (name, (IDict Data.Map.empty))
         _ -> throwError ("VarOnly: Not implemented: " ++ (show var))
 
 parseVarExpr :: VarExpr -> Interpreter (IVar, IVal)
@@ -417,6 +428,15 @@ executeEGt2 e1 e2 e3 = do
     (IBool b2) <- iValLt v3 v2
     return $ IBool (b1 && b2)
 
+executeEVarArr :: Ident -> Exp -> Interpreter IVal
+executeEVarArr var exp = do
+    loc <- getVarLoc var
+    val <- getLocVal loc
+    case val of
+      IDict m -> do
+          key <- executeExp exp
+          return $ m ! key
+
 executeEPPos :: IVar -> Interpreter IVal
 executeEPPos var = do
     loc <- getVarLoc var
@@ -443,9 +463,24 @@ executeEMMin var = do
             return $ IBool True
         _ -> throwError ("Invalid type for ++ operation: " ++ (show val))
 
+executeEAssArr :: Ident -> Exp -> Exp -> Interpreter IVal
+executeEAssArr var key val = do
+    env <- ask
+    loc <- getVarLoc var
+    origVal <- getLocVal loc
+    case origVal of
+        IDict map -> do
+            eval <- (executeExp val)
+            kval <- (executeExp key)
+            let nmap = IDict $ insert (getVal kval) (getVal eval) map
+            setLocVal loc nmap
+            return $ eval
+        _ -> throwError ("Invalid variable: " ++ (show var))
+
 executeExp :: Exp -> Interpreter IVal
 executeExp e = case e of
     EAss var exp -> executeEAss var exp
+    EAssArr var key val -> executeEAssArr var key val
     EEPlus var exp -> executeEEPlus var exp
     EEMinus var exp -> executeEEMinus var exp
     ElOr e1 e2 -> executeElOr e1 e2
@@ -462,6 +497,7 @@ executeExp e = case e of
     ESub e1 e2 -> executeESub e1 e2
     EMul e1 e2 -> executeEMul e1 e2
     EDiv e1 e2 -> executeEDiv e1 e2
+    EVarArr var exp -> executeEVarArr var exp
     EPPos var -> executeEPPos var
     EMMin var -> executeEMMin var
     EBNeg exp -> executeEBNeg exp
