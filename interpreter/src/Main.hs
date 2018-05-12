@@ -25,13 +25,15 @@ run :: String -> IO ()
 run text = let tokens = myLexer text in case pProgram tokens of
            Bad e      -> do putStrLn $ "Parsing error: " ++ e
                             exitFailure
-           Ok program -> case typesAnalyze program of
-                            Bad e -> putStrLn $ "Type error: " ++ e
-                            _     -> do
-                                w <- runExceptT $ interpret program
-                                case w of
-                                  (Left e) -> putStrLn $ "Runtime error: " ++ e
-                                  _        -> return ()
+           Ok program -> do
+                     w <- runExceptT $ typesAnalyze program
+                     case w of
+                        Left e -> putStrLn $ "Type error: " ++ e
+                        _      -> do
+                            w <- runExceptT $ interpret program
+                            case w of
+                              Left e -> putStrLn $ "Runtime error: " ++ e
+                              _        -> return ()
 
 usage :: IO ()
 usage = do
