@@ -265,6 +265,7 @@ parseFunNone func args stms = do
             -- Return nothing.
             case val of
               IReturn _ -> return $ IInt 0
+              INothing  -> return $ IInt 0
               _ -> throwError ("Function " ++ (show func) ++ " ended with invalid state.")
         envS <- local (const env) $ setFun func (IFun fname)
         return envS
