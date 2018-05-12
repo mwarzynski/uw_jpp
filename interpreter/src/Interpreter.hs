@@ -792,9 +792,7 @@ executeSBlock stms = do
     return (env, val)
 
 executeStatement :: Stm -> Interpreter (IEnv, IJump)
-executeStatement s = do
-    env <- ask
-    case s of
+executeStatement s = case s of
         SFunc func -> executeSFunc func
         SDecl var -> executeSDecl var
         SExp e -> executeSExp e
