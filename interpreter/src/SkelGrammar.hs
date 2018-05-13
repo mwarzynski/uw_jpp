@@ -25,27 +25,27 @@ transDecl x = case x of
   DVar var -> failure x
 transVar :: Var -> Result
 transVar x = case x of
-  DVarS vars -> failure x
-  DVarE vare -> failure x
+  DVarOnly varonly -> failure x
+  DVarExpr varexpr -> failure x
 transStruct :: Struct -> Result
 transStruct x = case x of
-  IStruct ident varss -> failure x
+  IStruct ident varonlys -> failure x
 transFunction :: Function -> Result
 transFunction x = case x of
   FunOne ident vars type_ stms -> failure x
   FunStr ident1 vars ident2 stms -> failure x
   FunNone ident vars stms -> failure x
-transVarS :: VarS -> Result
-transVarS x = case x of
+transVarOnly :: VarOnly -> Result
+transVarOnly x = case x of
   Dec ident type_ -> failure x
-  DecMany idents type_ -> failure x
-  DecSet ident type_ exp -> failure x
-transVarE :: VarE -> Result
-transVarE x = case x of
   DecStruct ident1 ident2 -> failure x
   DecDict ident type_1 type_2 -> failure x
-  DecArr ident type_ exps -> failure x
   DecArrMul ident type_ integer -> failure x
+transVarExpr :: VarExpr -> Result
+transVarExpr x = case x of
+  DecSet ident type_ exp -> failure x
+  DecArr ident type_ exps -> failure x
+  DecStructSet ident1 ident2 exp -> failure x
   DecArrMulInit ident type_ integer exp -> failure x
 transStm :: Stm -> Result
 transStm x = case x of
@@ -54,12 +54,11 @@ transStm x = case x of
   SExp exp -> failure x
   SBlock stms -> failure x
   SWhile exp stm -> failure x
-  SForD vars exp1 exp2 stm -> failure x
+  SForD var exp1 exp2 stm -> failure x
   SForE exp1 exp2 exp3 stm -> failure x
   SIf exp stm -> failure x
   SIfElse exp stm1 stm2 -> failure x
   SReturnOne exp -> failure x
-  SReturnStruct ident -> failure x
   SReturn -> failure x
   SJContinue -> failure x
   SJBreak -> failure x
@@ -87,23 +86,20 @@ transExp x = case x of
   Call ident exps -> failure x
   EVarArr ident exp -> failure x
   EStrAtt ident1 ident2 -> failure x
-  EPPos exp -> failure x
-  EMMin exp -> failure x
+  EPPos ident -> failure x
+  EMMin ident -> failure x
+  EBNeg exp -> failure x
   ENeg exp -> failure x
   EPos exp -> failure x
   EVar ident -> failure x
   EStr string -> failure x
-  EI32 integer -> failure x
-  EI64 integer -> failure x
-  EF32 double -> failure x
-  EF64 double -> failure x
+  EInt integer -> failure x
+  EFloat double -> failure x
   EBool tokenbool -> failure x
 transType :: Type -> Result
 transType x = case x of
-  TI32 -> failure x
-  TI64 -> failure x
-  TF32 -> failure x
-  TF64 -> failure x
+  TInt -> failure x
+  TFloat -> failure x
   TStr -> failure x
   TBool -> failure x
 

@@ -101,14 +101,14 @@ instance Print Decl where
   prtList _ (x:xs) = (concatD [prt 0 x, prt 0 xs])
 instance Print Var where
   prt i e = case e of
-    DVarS vars -> prPrec i 0 (concatD [prt 0 vars])
-    DVarE vare -> prPrec i 0 (concatD [prt 0 vare])
+    DVarOnly varonly -> prPrec i 0 (concatD [prt 0 varonly])
+    DVarExpr varexpr -> prPrec i 0 (concatD [prt 0 varexpr])
   prtList _ [] = (concatD [])
   prtList _ [x] = (concatD [prt 0 x])
   prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ","), prt 0 xs])
 instance Print Struct where
   prt i e = case e of
-    IStruct id varss -> prPrec i 0 (concatD [doc (showString "struct"), prt 0 id, doc (showString "{"), prt 0 varss, doc (showString "}")])
+    IStruct id varonlys -> prPrec i 0 (concatD [doc (showString "struct"), prt 0 id, doc (showString "{"), prt 0 varonlys, doc (showString "}")])
 
 instance Print Function where
   prt i e = case e of
@@ -116,20 +116,20 @@ instance Print Function where
     FunStr id1 vars id2 stms -> prPrec i 0 (concatD [doc (showString "fn"), prt 0 id1, doc (showString "("), prt 0 vars, doc (showString ")"), doc (showString "->"), prt 0 id2, doc (showString "{"), prt 0 stms, doc (showString "}")])
     FunNone id vars stms -> prPrec i 0 (concatD [doc (showString "fn"), prt 0 id, doc (showString "("), prt 0 vars, doc (showString ")"), doc (showString "->"), doc (showString "{"), prt 0 stms, doc (showString "}")])
 
-instance Print VarS where
+instance Print VarOnly where
   prt i e = case e of
     Dec id type_ -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_])
-    DecMany ids type_ -> prPrec i 0 (concatD [prt 0 ids, doc (showString ":"), prt 0 type_])
-    DecSet id type_ exp -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_, doc (showString "="), prt 2 exp])
+    DecStruct id1 id2 -> prPrec i 0 (concatD [prt 0 id1, doc (showString ":"), prt 0 id2])
+    DecDict id type_1 type_2 -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), doc (showString "{"), prt 0 type_1, doc (showString "->"), prt 0 type_2, doc (showString "}")])
+    DecArrMul id type_ n -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), doc (showString "["), prt 0 type_, doc (showString "*"), prt 0 n, doc (showString "]")])
   prtList _ [] = (concatD [])
   prtList _ [x] = (concatD [prt 0 x])
   prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ","), prt 0 xs])
-instance Print VarE where
+instance Print VarExpr where
   prt i e = case e of
-    DecStruct id1 id2 -> prPrec i 0 (concatD [prt 0 id1, doc (showString ":"), prt 0 id2])
-    DecDict id type_1 type_2 -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), doc (showString "{"), prt 0 type_1, doc (showString "->"), prt 0 type_2, doc (showString "}")])
+    DecSet id type_ exp -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), prt 0 type_, doc (showString "="), prt 2 exp])
     DecArr id type_ exps -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), doc (showString "["), prt 0 type_, doc (showString "]"), doc (showString "="), doc (showString "["), prt 0 exps, doc (showString "]")])
-    DecArrMul id type_ n -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), doc (showString "["), prt 0 type_, doc (showString "*"), prt 0 n, doc (showString "]")])
+    DecStructSet id1 id2 exp -> prPrec i 0 (concatD [prt 0 id1, doc (showString ":"), prt 0 id2, doc (showString "="), prt 2 exp])
     DecArrMulInit id type_ n exp -> prPrec i 0 (concatD [prt 0 id, doc (showString ":"), doc (showString "["), prt 0 type_, doc (showString "*"), prt 0 n, doc (showString "]"), doc (showString "="), doc (showString "["), prt 0 exp, doc (showString ","), doc (showString ".."), doc (showString "]")])
   prtList _ [] = (concatD [])
   prtList _ [x] = (concatD [prt 0 x])
@@ -141,12 +141,11 @@ instance Print Stm where
     SExp exp -> prPrec i 0 (concatD [prt 0 exp, doc (showString ";")])
     SBlock stms -> prPrec i 0 (concatD [doc (showString "{"), prt 0 stms, doc (showString "}")])
     SWhile exp stm -> prPrec i 0 (concatD [doc (showString "while"), prt 0 exp, prt 0 stm])
-    SForD vars exp1 exp2 stm -> prPrec i 0 (concatD [doc (showString "for"), prt 0 vars, doc (showString ","), prt 0 exp1, doc (showString ","), prt 0 exp2, prt 0 stm])
+    SForD var exp1 exp2 stm -> prPrec i 0 (concatD [doc (showString "for"), prt 0 var, doc (showString ","), prt 0 exp1, doc (showString ","), prt 0 exp2, prt 0 stm])
     SForE exp1 exp2 exp3 stm -> prPrec i 0 (concatD [doc (showString "for"), prt 0 exp1, doc (showString ","), prt 0 exp2, doc (showString ","), prt 0 exp3, prt 0 stm])
     SIf exp stm -> prPrec i 0 (concatD [doc (showString "if"), prt 0 exp, prt 0 stm])
     SIfElse exp stm1 stm2 -> prPrec i 0 (concatD [doc (showString "if"), prt 0 exp, prt 0 stm1, doc (showString "else"), prt 0 stm2])
     SReturnOne exp -> prPrec i 0 (concatD [doc (showString "return"), prt 0 exp, doc (showString ";")])
-    SReturnStruct id -> prPrec i 0 (concatD [doc (showString "return"), prt 0 id, doc (showString ";")])
     SReturn -> prPrec i 0 (concatD [doc (showString "return"), doc (showString ";")])
     SJContinue -> prPrec i 0 (concatD [doc (showString "continue"), doc (showString ";")])
     SJBreak -> prPrec i 0 (concatD [doc (showString "break"), doc (showString ";")])
@@ -174,28 +173,25 @@ instance Print Exp where
     EMul exp1 exp2 -> prPrec i 6 (concatD [prt 6 exp1, doc (showString "*"), prt 6 exp2])
     EDiv exp1 exp2 -> prPrec i 6 (concatD [prt 6 exp1, doc (showString "/"), prt 6 exp2])
     Call id exps -> prPrec i 7 (concatD [prt 0 id, doc (showString "("), prt 0 exps, doc (showString ")")])
-    EVarArr id exp -> prPrec i 7 (concatD [prt 0 id, doc (showString "["), prt 0 exp, doc (showString "]")])
+    EVarArr id exp -> prPrec i 7 (concatD [prt 0 id, doc (showString "["), prt 6 exp, doc (showString "]")])
     EStrAtt id1 id2 -> prPrec i 7 (concatD [prt 0 id1, doc (showString "."), prt 0 id2])
-    EPPos exp -> prPrec i 7 (concatD [prt 7 exp, doc (showString "++")])
-    EMMin exp -> prPrec i 7 (concatD [prt 7 exp, doc (showString "--")])
+    EPPos id -> prPrec i 7 (concatD [prt 0 id, doc (showString "++")])
+    EMMin id -> prPrec i 7 (concatD [prt 0 id, doc (showString "--")])
+    EBNeg exp -> prPrec i 7 (concatD [doc (showString "!"), prt 7 exp])
     ENeg exp -> prPrec i 7 (concatD [doc (showString "-"), prt 7 exp])
     EPos exp -> prPrec i 7 (concatD [doc (showString "+"), prt 7 exp])
     EVar id -> prPrec i 7 (concatD [prt 0 id])
     EStr str -> prPrec i 7 (concatD [prt 0 str])
-    EI32 n -> prPrec i 7 (concatD [prt 0 n])
-    EI64 n -> prPrec i 7 (concatD [prt 0 n])
-    EF32 d -> prPrec i 7 (concatD [prt 0 d])
-    EF64 d -> prPrec i 7 (concatD [prt 0 d])
+    EInt n -> prPrec i 7 (concatD [prt 0 n])
+    EFloat d -> prPrec i 7 (concatD [prt 0 d])
     EBool tokenbool -> prPrec i 7 (concatD [prt 0 tokenbool])
   prtList _ [] = (concatD [])
   prtList _ [x] = (concatD [prt 0 x])
   prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ","), prt 0 xs])
 instance Print Type where
   prt i e = case e of
-    TI32 -> prPrec i 0 (concatD [doc (showString "i32")])
-    TI64 -> prPrec i 0 (concatD [doc (showString "i64")])
-    TF32 -> prPrec i 0 (concatD [doc (showString "f32")])
-    TF64 -> prPrec i 0 (concatD [doc (showString "f64")])
+    TInt -> prPrec i 0 (concatD [doc (showString "int")])
+    TFloat -> prPrec i 0 (concatD [doc (showString "float")])
     TStr -> prPrec i 0 (concatD [doc (showString "str")])
     TBool -> prPrec i 0 (concatD [doc (showString "bool")])
   prtList _ [] = (concatD [])
