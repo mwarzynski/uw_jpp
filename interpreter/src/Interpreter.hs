@@ -550,6 +550,7 @@ executeEVarArr var exp = do
               IInt i -> do
                   let index = fromInteger i
                   return $ a !! index
+              _ -> throwError ("Invalid index: " ++ (show b))
       _ -> throwError ("Invalid use of [] for :" ++ (show val))
 
 executeEPPos :: IVar -> Interpreter IVal

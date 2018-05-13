@@ -263,8 +263,19 @@ tExp (EDiv e1 e2) = do
         return t1
     else throwError ("/ needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
 tExp (Call fname exps) = do
+    -- TODO tExp Call
     (_, _, funcEnv, _) <- ask
     return Null
+tExp (EVarArr name index) = do
+    ar <- tGetVarType name
+    indexType <- tExp index
+    case ar of
+      TArray aType -> if indexType == Types.TInt then return aType
+                      else throwError ("Accessing array " ++ (show name) ++ " with invalid index type " ++ (show indexType))
+      TDict (keyType, valType) -> if indexType == keyType then return valType
+                                  else throwError ("Accessing dict " ++ (show name) ++ " with invalid key type: want: " ++ (show keyType) ++ ", got: " ++ (show indexType))
+      _ -> throwError ("Accessing invalid variable type: " ++ (show name))
+
 tExp (EStr s) = return Types.TStr
 tExp (EInt i) = return Types.TInt
 tExp (EFloat f) = return Types.TFloat
