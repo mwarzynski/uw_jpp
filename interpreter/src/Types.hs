@@ -49,8 +49,10 @@ tSetVar var t = do
 tGetVarType :: TVar -> TypeChecker TType
 tGetVarType var = do
     (_, envVar, _, _) <- ask
-    let t = envVar ! var
-    return t
+    if (Data.Map.lookup var envVar) /= Nothing then do
+        let t = envVar ! var
+        return t
+    else throwError ("Variable was not declared before: " ++ (show var))
 
 tSetFun :: TFName -> [TType] -> TType -> TFun -> TypeChecker TEnv
 tSetFun fname types returnType fun = do
@@ -109,7 +111,14 @@ tVarOnly vo = case vo of
     _ -> throwError (show vo)
 tVarExpr :: VarExpr -> TypeChecker TEnv
 tVarExpr vr = case vr of
-    DecSet name vtype exp -> ask
+    DecSet name vtype exp -> do
+        env <- ask
+        t <- tExp exp
+        let expectedT = typeToTType vtype
+        if t /= expectedT then throwError ("Invalid expression type for declared variable: " ++ show(name) ++ ", want: " ++ (show expectedT) ++ ", got: " ++ (show t))
+        else do
+            env1 <- local (const env) $ tSetVar name t
+            return env1
     -- DecArr name itype exps ->
     -- DecAtructSet name sname exp ->
     -- DecArrMulInit name itype length exp ->
@@ -142,12 +151,100 @@ tExp (EAssArr name indexExp valExp) = do
                                     throwError ("Assigning to " ++ (show name) ++ " - invalid value type: want: " ++ (show vType) ++ ", got: " ++ (show valType))
                                 else return Null
       _ -> throwError ("Invalid index type for " ++ (show name) ++ ", want: int, got: " ++ (show indexExp))
+tExp (EAssStr name attrName value) = throwError ("EAssStr: Not implemented")
+tExp (EEPlus name exp) = do
+    env <- ask
+    t <- tGetVarType name
+    valType <- tExp exp
+    case t of
+      Types.TInt -> case valType of
+        Types.TInt -> return Null
+        _ -> throwError ("Invalid value for += operation (want Int) on " ++ (show name))
+      Types.TFloat -> case valType of
+        Types.TFloat -> return Null
+        _ -> throwError ("Invalid value for += operation (want Float) on " ++ (show name))
+      _ -> throwError ("Invalid variable to execute += on.")
+tExp (EEMinus name exp) = do
+    env <- ask
+    t <- tGetVarType name
+    valType <- tExp exp
+    case t of
+      Types.TInt -> case valType of
+        Types.TInt -> return Null
+        _ -> throwError ("Invalid value for -= operation (want Int) on " ++ (show name))
+      Types.TFloat -> case valType of
+        Types.TFloat -> return Null
+        _ -> throwError ("Invalid value for -= operation (want Float) on " ++ (show name))
+      _ -> throwError ("Invalid variable to execute -= on.")
+tExp (ElOr b1 b2) = do
+    t1 <- tExp b1
+    t2 <- tExp b2
+    if t1 == Types.TBool && t2 == Types.TBool then
+        return Types.TBool
+    else throwError ("|| needs boolean values, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (ElAnd e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == Types.TBool && t2 == Types.TBool then
+        return Types.TBool
+    else throwError ("&& needs boolean values, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (EEq e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 then
+        return Types.TBool
+    else throwError ("== needs the same types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (ENEq e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 then
+        return Types.TBool
+    else throwError ("!= needs the same types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (ELt e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 then
+        return Types.TBool
+    else throwError ("< needs the same types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (ELtE e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 then
+        return Types.TBool
+    else throwError ("<= needs the same types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (ELt2 e1 e2 e3) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    t3 <- tExp e3
+    if t1 == t2 && t2 == t3 then
+        return Types.TBool
+    else throwError ("a < b < c needs the same types, got: " ++ (show t1) ++ ", " ++ (show t2) ++ ", " ++ (show t3))
+tExp (EGt e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 then
+        return Types.TBool
+    else throwError ("> needs the same types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (EGtE e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 then
+        return Types.TBool
+    else throwError (">= needs the same types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (EGt2 e1 e2 e3) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    t3 <- tExp e3
+    if t1 == t2 && t2 == t3 then
+        return Types.TBool
+    else throwError ("a > b > c needs the same types, got: " ++ (show t1) ++ ", " ++ (show t2) ++ ", " ++ (show t3))
 tExp (Call fname exps) = do
     (_, _, funcEnv, _) <- ask
     return Null
 tExp (EStr s) = return Types.TStr
 tExp (EInt i) = return Types.TInt
 tExp (EFloat f) = return Types.TFloat
+tExp (EBool b) = return Types.TBool
 tExp e = throwError ("tExp: Not implemented: " ++ (show e))
 
 
@@ -165,7 +262,13 @@ tStatement (SExp exp) = do
     env <- ask
     t <- tExp exp
     return env
-
+tStatement (SIf exp stm) = do
+    b <- tExp exp
+    if b == Types.TBool then do
+        env <- tStatement stm
+        return env
+    else throwError ("If requires boolean value, got: " ++ (show b))
+tStatement (SBlock stms) = tStatements stms
 tStatement s = throwError ("tStatement: Not implemented: " ++ (show s))
 
 tStatements :: [Stm] -> TypeChecker TEnv
