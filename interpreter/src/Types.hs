@@ -41,6 +41,17 @@ type TEnv = (TType, TEnvVar, TEnvFunc, TEnvStruct)
 type TResult = ExceptT String IO
 type TypeChecker = ReaderT TEnv TResult
 
+tSetVar :: TVar -> TType -> TypeChecker TEnv
+tSetVar var t = do
+    (rtype, envVar, envFunc, envStruct) <- ask
+    return (rtype, insert var t envVar, envFunc, envStruct)
+
+tGetVarType :: TVar -> TypeChecker TType
+tGetVarType var = do
+    (_, envVar, _, _) <- ask
+    let t = envVar ! var
+    return t
+
 tSetFun :: TFName -> [TType] -> TType -> TFun -> TypeChecker TEnv
 tSetFun fname types returnType fun = do
     (returnType, envVar, envFun, envStruct) <- ask
@@ -61,21 +72,74 @@ tVarToType _ = Types.TFloat
 tVarsToTypes :: [Var] -> [TType]
 tVarsToTypes _ = []
 
+tExpToType :: Exp -> TType
+tExpToType _ = Null
+
+tExpsToTypes :: [Exp] -> [TType]
+tExpsToTypes [] = []
+tExpsToTypes (e:es) = let t = tExpToType e in
+                          [t] ++ tExpsToTypes es
+
+tVarOnly :: VarOnly -> TypeChecker TEnv
+tVarOnly vo = case vo of
+    Dec name vtype -> do
+        env <- ask
+        env1 <- local (const env) $ tSetVar name (typeToTType vtype)
+        return env1
+    -- DecStruct name stype
+    -- DecDict name ktype vtype
+    -- DecArrMul name itype length
+tVarExpr :: VarExpr -> TypeChecker TEnv
+tVarExpr vr = case vr of
+    DecSet name vtype exp -> ask
+    -- DecArr name itype exps ->
+    -- DecAtructSet name sname exp ->
+    -- DecArrMulInit name itype length exp ->
+
+tVar :: Var -> TypeChecker TEnv
+tVar v = case v of
+    DVarOnly vo -> tVarOnly vo
+    DVarExpr vr -> tVarExpr vr
+
+tExp :: Exp -> TypeChecker TType
+tExp (Call fname exps) = do
+    (_, _, funcEnv, _) <- ask
+    return Null
+tExp (EAss name exp) = do
+    t <- tExp exp
+    expectedT <- tGetVarType name
+    if t == expectedT then
+        return Null
+    else throwError ("Invalid assignment to " ++ (show name) ++ ", want: " ++ (show expectedT) ++ ", got: " ++ (show t))
+tExp (EStr s) = return Types.TStr
+tExp (EInt i) = return Types.TInt
+tExp (EFloat f) = return Types.TFloat
+tExp e = throwError ("tExp: Not implemented: " ++ (show e))
+
+
 tStatement :: Stm -> TypeChecker TEnv
 tStatement (SFunc func) = do
     env <- ask
     (env1, (TFun fun)) <- local (const env) $ tDFunction func
     fun
     return env1
+tStatement (SDecl v) = do
+    env <- ask
+    env1 <- local (const env) $ tVar v
+    return env1
+tStatement (SExp exp) = do
+    env <- ask
+    t <- tExp exp
+    return env
+
 tStatement s = throwError ("tStatement: Not implemented: " ++ (show s))
 
 tStatements :: [Stm] -> TypeChecker TEnv
-tStatements [] = do
-    env <- ask
-    return env
+tStatements [] = ask
 tStatements (s:ss) = do
-    t <- tStatement s
-    tStatements ss
+    env <- tStatement s
+    env1 <- local (const env) $ tStatements ss
+    return env1
 
 tDFunction :: Function -> TypeChecker (TEnv, TFun)
 tDFunction (FunOne fname fvars rtype stms) = do
