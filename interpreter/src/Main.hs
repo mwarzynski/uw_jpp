@@ -1,4 +1,4 @@
-import System.IO ( stdin, hGetContents )
+import System.IO ( stdin, hGetContents, hPutStrLn, stderr )
 import System.Environment ( getArgs, getProgName )
 import System.Exit ( exitFailure, exitSuccess )
 
@@ -23,16 +23,17 @@ runFile f = readFile f >>= run
 
 run :: String -> IO ()
 run text = let tokens = myLexer text in case pProgram tokens of
-           Bad e      -> do putStrLn $ "Parsing error: " ++ e
-                            exitFailure
-           Ok program -> do
+             Bad e      -> do
+                 hPutStrLn stderr $ "Parsing error: " ++ e
+                 exitFailure
+             Ok program -> do
                      w <- runExceptT $ typesAnalyze program
                      case w of
-                        Left e -> putStrLn $ "Type error: " ++ e
+                        Left e -> hPutStrLn stderr $ "Type error: " ++ e
                         _      -> do
                             w <- runExceptT $ interpret program
                             case w of
-                              Left e -> putStrLn $ "Runtime error: " ++ e
+                              Left e -> hPutStrLn stderr $ "Runtime error: " ++ e
                               _        -> return ()
 
 usage :: IO ()
