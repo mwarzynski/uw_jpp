@@ -67,18 +67,27 @@ checkTypes :: [TType] -> [TType] -> TypeChecker ()
 checkTypes [] [] = return ()
 checkTypes (a:as) (b:bs) = if a == b then checkTypes as bs else throwError "no i chuj, nie pykło"
 
-tVarToType :: Var -> TType
-tVarToType _ = Types.TFloat
-tVarsToTypes :: [Var] -> [TType]
-tVarsToTypes _ = []
+tVarToType :: Var -> TypeChecker TType
+tVarToType _ = return Null
 
-tExpToType :: Exp -> TType
-tExpToType _ = Null
+tVarsToTypes :: [Var] -> TypeChecker [TType]
+tVarsToTypes [] = return $ []
+tVarsToTypes (v:vs) = do
+    t <- tVarToType v
+    ts <- tVarsToTypes vs
+    return $ [t] ++ ts
 
-tExpsToTypes :: [Exp] -> [TType]
-tExpsToTypes [] = []
-tExpsToTypes (e:es) = let t = tExpToType e in
-                          [t] ++ tExpsToTypes es
+tExpToType :: Exp -> TypeChecker TType
+tExpToType exp = do
+    t <- tExp exp
+    return t
+
+tExpsToTypes :: [Exp] -> TypeChecker [TType]
+tExpsToTypes [] = return $ []
+tExpsToTypes (e:es) = do
+    t <- tExpToType e
+    ts <- tExpsToTypes es
+    return $ [t] ++ ts
 
 tVarOnly :: VarOnly -> TypeChecker TEnv
 tVarOnly vo = case vo of
@@ -87,8 +96,17 @@ tVarOnly vo = case vo of
         env1 <- local (const env) $ tSetVar name (typeToTType vtype)
         return env1
     -- DecStruct name stype
-    -- DecDict name ktype vtype
-    -- DecArrMul name itype length
+    DecDict name ktype vtype -> do
+        let kt = typeToTType ktype
+        let vt = typeToTType vtype
+        env <- tSetVar name (TDict (kt, vt))
+        return env
+    DecArrMul name itype length -> do
+        env <- ask
+        let ttype = typeToTType itype
+        env1 <- local (const env) $ tSetVar name (TArray ttype)
+        return env1
+    _ -> throwError (show vo)
 tVarExpr :: VarExpr -> TypeChecker TEnv
 tVarExpr vr = case vr of
     DecSet name vtype exp -> ask
@@ -102,15 +120,31 @@ tVar v = case v of
     DVarExpr vr -> tVarExpr vr
 
 tExp :: Exp -> TypeChecker TType
-tExp (Call fname exps) = do
-    (_, _, funcEnv, _) <- ask
-    return Null
 tExp (EAss name exp) = do
     t <- tExp exp
     expectedT <- tGetVarType name
     if t == expectedT then
         return Null
     else throwError ("Invalid assignment to " ++ (show name) ++ ", want: " ++ (show expectedT) ++ ", got: " ++ (show t))
+tExp (EAssArr name indexExp valExp) = do
+    indexType <- tExp indexExp
+    valType <- tExp valExp
+    arrType <- tGetVarType name
+    case arrType of
+      TArray aType -> if indexType /= Types.TInt then
+                                    throwError ("Invalid index type: " ++ (show indexType))
+                                else if valType /= aType then
+                                    throwError ("Invalid value type for " ++ (show name) ++ ", want: " ++ (show aType) ++ ", got: " ++ (show valType))
+                                else return Null
+      TDict (kType, vType) -> if indexType /= kType then
+                                                    throwError ("Assigning to " ++ (show name) ++ " - invalid key type: want: " ++ (show kType) ++ ", got: " ++ (show indexType))
+                                else if valType /= vType then
+                                    throwError ("Assigning to " ++ (show name) ++ " - invalid value type: want: " ++ (show vType) ++ ", got: " ++ (show valType))
+                                else return Null
+      _ -> throwError ("Invalid index type for " ++ (show name) ++ ", want: int, got: " ++ (show indexExp))
+tExp (Call fname exps) = do
+    (_, _, funcEnv, _) <- ask
+    return Null
 tExp (EStr s) = return Types.TStr
 tExp (EInt i) = return Types.TInt
 tExp (EFloat f) = return Types.TFloat
@@ -144,7 +178,7 @@ tStatements (s:ss) = do
 tDFunction :: Function -> TypeChecker (TEnv, TFun)
 tDFunction (FunOne fname fvars rtype stms) = do
     env <- ask
-    let ftypes = tVarsToTypes fvars
+    ftypes <- tVarsToTypes fvars
     let rttype = typeToTType rtype
     let func = do
         (_, a, b, c) <- local (const env) $ tSetFun fname ftypes rttype (TFun func)
@@ -156,7 +190,7 @@ tDFunction (FunOne fname fvars rtype stms) = do
     return (envS, tfun)
 tDFunction (FunNone fname fvars stms) = do
     env <- ask
-    let ftypes = tVarsToTypes fvars
+    ftypes <- tVarsToTypes fvars
     let func = do
         (_, a, b, c) <- local (const env) $ tSetFun fname ftypes Null (TFun func)
         let env1 = (Null, a, b, c)
@@ -169,7 +203,7 @@ tDFunction (FunStr fname fvars rstruct stms) = do
     env <- ask
     let (_, _, _, sEnv) = env
     if (Data.Map.lookup rstruct sEnv) /= Nothing then do
-        let ftypes = tVarsToTypes fvars
+        ftypes <- tVarsToTypes fvars
         let func = do
             (_, a, b, c) <- local (const env) $ tSetFun fname ftypes (TReturn rstruct) (TFun func)
             let env1 = ((TReturn rstruct), a, b, c)
