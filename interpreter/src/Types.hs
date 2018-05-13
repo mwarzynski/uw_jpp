@@ -335,13 +335,36 @@ tStatement (SExp exp) = do
     env <- ask
     t <- tExp exp
     return env
+tStatement (SBlock stms) = tStatements stms
+tStatement (SWhile exp stm) = do
+    t <- tExp exp
+    if t == Types.TBool then
+        tStatement stm
+    else throwError ("Invalid while condition type " ++ (show t))
+tStatement (SForD var expCheck expFinal stm) = do
+    env <- ask
+    env1 <- local (const env) $ tVar var
+    tCheck <- local (const env1) $ tExp expCheck
+    e <- local (const env1) $ tExp expFinal
+    if tCheck == Types.TBool then do
+        env2 <- local (const env1) $ tStatement stm
+        return env
+    else throwError ("For condition must be boolean, got " ++ (show tCheck))
+tStatement (SForE expBefore expCheck expFinal stm) = do
+    env <- ask
+    e <- local (const env) $ tExp expBefore
+    tCheck <- local (const env) $ tExp expCheck
+    e <- local (const env) $ tExp expFinal
+    if tCheck == Types.TBool then do
+        env2 <- local (const env) $ tStatement stm
+        return env
+    else throwError ("For condition must be boolean, got " ++ (show tCheck))
 tStatement (SIf exp stm) = do
     b <- tExp exp
     if b == Types.TBool then do
         env <- tStatement stm
         return env
     else throwError ("If requires boolean value, got: " ++ (show b))
-tStatement (SBlock stms) = tStatements stms
 tStatement s = throwError ("tStatement: Not implemented: " ++ (show s))
 
 tStatements :: [Stm] -> TypeChecker TEnv
