@@ -23,7 +23,6 @@ data TType
     | TDict (TType, TType)
     | TStruct (Map TVar TType)
     | TArray TType
-    | TReturn TSName
     | Null
     deriving (Show, Eq, Ord)
 
@@ -54,7 +53,7 @@ tGetFunc fname = do
     (_, _, envFun, _) <- ask
     let c = Data.Map.lookup fname envFun
     case c of
-      Just t -> return t
+      Just func -> return func
       Nothing -> throwError ((show fname) ++ " function does not exist")
 
 tGetStructType :: TSName -> TypeChecker TType
@@ -70,10 +69,10 @@ tSetVar var t = do
     (rtype, envVar, envFunc, envStruct) <- ask
     return (rtype, insert var t envVar, envFunc, envStruct)
 
-tSetFun :: TFName -> [TType] -> TType -> TFun -> TypeChecker TEnv
-tSetFun fname types returnType fun = do
-    (returnType, envVar, envFun, envStruct) <- ask
-    return (returnType, envVar, insert fname (types, fun, returnType) envFun, envStruct)
+tSetFun :: TFName -> [TType] -> TFun -> TType -> TypeChecker TEnv
+tSetFun fname types fun returnType = do
+    (rt, envVar, envFun, envStruct) <- ask
+    return (rt, envVar, insert fname (types, fun, returnType) envFun, envStruct)
 
 tSetStruct :: TSName -> TType -> TypeChecker TEnv
 tSetStruct name value = case value of
@@ -211,8 +210,6 @@ tCheckParseInt (e:es) = do
           Types.TStr -> return Types.TInt
           _ -> throwError ("Function parse_int requires one arguent which must be a string")
 
-
-
 tVarExpr :: VarExpr -> TypeChecker TEnv
 tVarExpr vr = case vr of
     DecSet name vtype exp -> do
@@ -229,7 +226,14 @@ tVarExpr vr = case vr of
         tExpsHaveType exps it
         env1 <- local (const env) $ tSetVar name (TArray it)
         return env1
-    -- DecStructSet name sname exp ->
+    DecStructSet name sname exp -> do
+        env <- ask
+        vt <- local (const env) $ tExp exp
+        exVT <- local (const env) $ tGetStructType sname
+        if vt /= exVT then throwError "Declaring struct with invalid value"
+        else do
+            env1 <- local (const env) $ tSetVar name vt
+            return env1
     DecArrMulInit name itype _ exp -> do
         env <- ask
         let it = typeToTType itype
@@ -238,7 +242,6 @@ tVarExpr vr = case vr of
             env1 <- local (const env) $ tSetVar name (TArray it)
             return env1
         else throwError ("Array declaration, invalid expression type: want: " ++ (show it) ++ ", got: " ++ (show expT))
-    _ -> throwError ("tVarExpr not implemented " ++ (show vr))
 
 tVar :: Var -> TypeChecker TEnv
 tVar v = case v of
@@ -393,6 +396,7 @@ tExp (EDiv e1 e2) = do
     else throwError ("/ needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
 
 tExp (Call fname exps) = do
+    env <- ask
     if fname == (Ident "print") then
         return Null
     else
@@ -402,9 +406,10 @@ tExp (Call fname exps) = do
             if fname == (Ident "parse_int") then
                 tCheckParseInt exps
             else do
-                (argTypes, _, returnType) <- tGetFunc fname
+                (argTypes, _, returnType) <- local (const env) $ tGetFunc fname
                 passedTypes <- tExpsToTypes exps
-                if argTypes == passedTypes then return returnType
+                if argTypes == passedTypes then do
+                    return returnType
                 else throwError ("Passed invalid arguments to function: " ++ (show fname))
 
 tExp (EVarArr name index) = do
@@ -561,12 +566,12 @@ tDFunction (FunOne fname fvars rtype stms) = do
     let func = do
         args <- local (const fEnv) $ tParseVars fvars
         fEnv1 <- local (const fEnv) $ tBindArguments args
-        fEnv2 <- local (const fEnv1) $ tSetFun fname ftypes rttype (TFun func)
+        fEnv2 <- local (const fEnv1) $ tSetFun fname ftypes (TFun func) rttype
         (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
         if returnType == rttype then return ()
         else throwError ("Function " ++ (show fname) ++ " returned invalid type, want: " ++ (show rttype) ++ ", got: " ++ (show returnType))
     let tfun = (TFun func)
-    envS <- local (const env) $ tSetFun fname ftypes rttype tfun
+    envS <- local (const env) $ tSetFun fname ftypes tfun rttype
     return (envS, tfun)
 tDFunction (FunNone fname fvars stms) = do
     env <- ask
@@ -578,14 +583,14 @@ tDFunction (FunNone fname fvars stms) = do
         args <- local (const fEnv) $ tParseVars fvars
         fEnv2 <- local (const fEnv) $ tBindArguments args
         -- add declared function to env
-        fEnv3 <- local (const fEnv2) $ tSetFun fname ftypes Null (TFun func)
+        fEnv3 <- local (const fEnv2) $ tSetFun fname ftypes (TFun func) Null
         -- execute
         (returnType, _, _, _) <- local (const fEnv3) $ tStatements stms
         -- check return type
         if returnType == Null then return ()
         else throwError ("Function " ++ (show fname) ++ " instead of Null returned " ++ (show returnType))
     let tfun = (TFun func)
-    envS <- local (const env) $ tSetFun fname ftypes Null tfun
+    envS <- local (const env) $ tSetFun fname ftypes tfun Null
     return (envS, tfun)
 tDFunction (FunStr fname fvars rstruct stms) = do
     env <- ask
@@ -596,12 +601,12 @@ tDFunction (FunStr fname fvars rstruct stms) = do
     let func = do
         args <- local (const fEnv) $ tParseVars fvars
         fEnv1 <- local (const fEnv) $ tBindArguments args
-        fEnv2 <- local (const fEnv1) $ tSetFun fname ftypes (TReturn rstruct) (TFun func)
+        fEnv2 <- local (const fEnv1) $ tSetFun fname ftypes (TFun func) rttype
         (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
         if returnType == rttype then return ()
         else throwError ("Function " ++ (show fname) ++ " returned invalid struct, want: " ++ (show rstruct))
     let tfun = (TFun func)
-    envS <- local (const env) $ tSetFun fname ftypes (TReturn rstruct) tfun
+    envS <- local (const env) $ tSetFun fname ftypes tfun rttype
     return (envS, tfun)
 
 tDStruct :: Struct -> TypeChecker TEnv
@@ -634,17 +639,15 @@ tDeclarations (d:ds) = do
 tProgram :: Program -> TypeChecker ()
 tProgram (Prog declarations) = do
     env <- tDeclarations declarations
-    let (_, _, funcEnv, _) = env
-    checkFuncs (Data.Map.toList funcEnv)
+    let (_, _, funcEnv, sEnv) = env
+    local (const env) $ checkFuncs (Data.Map.toList funcEnv)
     return ()
     where checkFuncs :: [(TFName, ([TType], TFun, TType))] -> TypeChecker ()
           checkFuncs [] = return $ ()
           checkFuncs (v:vs) = do
               t <- checkFunc (snd v)
               checkFuncs vs
-          checkFunc (_, (TFun func), _) = do
-              t <- func
-              return $ t
+          checkFunc (_, (TFun func), _) = func
 
 typesAnalyze :: Program -> TResult ()
 typesAnalyze program = do
