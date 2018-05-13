@@ -88,12 +88,21 @@ Outside these Keywords produce an error.
 
 Function declaration:
 ```
-fn function_name() : int {}
-fn function_name2(a:int) : {}
+fn function_name() -> int {}
+fn function_name2(a:int) -> {}
 ```
 Functions accept as arguments only basic types (built-in types and structs).
 Functions might be declared inside other functions (and then will be
-visible only in the local scope).
+visible only in the local scope). Therefore nested functions declarations are allowed.
+```
+
+fn hello_world() -> {
+    fn hello_world_better() -> {
+        print("Hello, World"):    
+    }
+    hello_world_better();
+}
+```
 
 ## Type check
 
