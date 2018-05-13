@@ -41,26 +41,34 @@ type TEnv = (TType, TEnvVar, TEnvFunc, TEnvStruct)
 type TResult = ExceptT String IO
 type TypeChecker = ReaderT TEnv TResult
 
-tSetVar :: TVar -> TType -> TypeChecker TEnv
-tSetVar var t = do
-    (rtype, envVar, envFunc, envStruct) <- ask
-    return (rtype, insert var t envVar, envFunc, envStruct)
-
 tGetVarType :: TVar -> TypeChecker TType
 tGetVarType var = do
     (_, envVar, _, _) <- ask
-    if (Data.Map.lookup var envVar) /= Nothing then do
-        let t = envVar ! var
-        return t
-    else throwError ("Variable was not declared before: " ++ (show var))
+    let c = Data.Map.lookup var envVar
+    case c of
+        Just t -> return t
+        Nothing -> throwError ("Variable was not declared before: " ++ (show var))
+
+tGetFunc :: TFName -> TypeChecker ([TType], TFun, TType)
+tGetFunc fname = do
+    (_, _, envFun, _) <- ask
+    let c = Data.Map.lookup fname envFun
+    case c of
+      Just t -> return t
+      Nothing -> throwError ((show fname) ++ " function does not exist")
 
 tGetStructType :: TSName -> TypeChecker TType
 tGetStructType name = do
     (_, _, _, envStruct) <- ask
-    if (Data.Map.lookup name envStruct) /= Nothing then do
-        let s = envStruct ! name
-        return s
-    else throwError ("Struct " ++ (show name) ++ " was not defined.")
+    let c = Data.Map.lookup name envStruct
+    case c of
+      Just t -> return t
+      Nothing -> throwError ("Struct " ++ (show name) ++ " was not defined.")
+
+tSetVar :: TVar -> TType -> TypeChecker TEnv
+tSetVar var t = do
+    (rtype, envVar, envFunc, envStruct) <- ask
+    return (rtype, insert var t envVar, envFunc, envStruct)
 
 tSetFun :: TFName -> [TType] -> TType -> TFun -> TypeChecker TEnv
 tSetFun fname types returnType fun = do
@@ -99,9 +107,41 @@ tParseVarOnly (DecArrMul n t _) = do
     let tt = typeToTType t
     return (n, (TArray tt))
 
+tParseVarsOnly :: [VarOnly] -> TypeChecker [(TVar,TType)]
+tParseVarsOnly [] = return []
+tParseVarsOnly (v:vs) = do
+    t <- tParseVarOnly v
+    ts <- tParseVarsOnly vs
+    return $ [t] ++ ts
+
+tParseVarExpr :: VarExpr -> TypeChecker (TVar,TType)
+tParseVarExpr (DecSet name vtype _) = do
+    let tt = typeToTType vtype
+    return (name, tt)
+tParseVarExpr (DecStructSet name sname _) = do
+    v <- tGetStructType sname
+    return (name, v)
+tParseVarExpr (DecArrMulInit name itype length exp) = do
+    let tt = typeToTType itype
+    return (name, (TArray tt))
+
+tParseVar :: Var -> TypeChecker (TVar,TType)
+tParseVar (DVarExpr v) = tParseVarExpr v
+tParseVar (DVarOnly v) = tParseVarOnly v
+
+tParseVars :: [Var] -> TypeChecker [(TVar,TType)]
+tParseVars [] = return $ []
+tParseVars (v:vs) = do
+    t <- tParseVar v
+    ts <- tParseVars vs
+    return $ [t] ++ ts
+
 tVarToType :: Var -> TypeChecker TType
 tVarToType (DVarOnly v) = do
     (_, t) <- tParseVarOnly v
+    return t
+tVarToType (DVarExpr v) = do
+    (_, t) <- tParseVarExpr v
     return t
 
 tVarsToTypes :: [Var] -> TypeChecker [TType]
@@ -211,12 +251,14 @@ tExp (EAssStr name attrName value) = do
     env <- ask
     t <- tGetVarType name
     case t of
-        TStruct struct -> if (Data.Map.lookup attrName struct) /= Nothing then do
-                            vt <- tExp value
-                            let expectedVT = struct ! attrName
-                            if vt == expectedVT then return Null
-                            else throwError ("Invalid type while assigning to attribute")
-                          else throwError ("Struct attribute does not exist")
+        TStruct struct -> do
+            let c = Data.Map.lookup attrName struct
+            case c of
+              Just expectedVT -> do
+                vt <- tExp value
+                if vt == expectedVT then return Null
+                else throwError ("Invalid type while assigning to attribute")
+              Nothing -> throwError ("Struct attribute does not exist")
         _ -> throwError ("Variable " ++ (show name) ++ " is not a struct.")
 tExp (EEPlus name exp) = do
     env <- ask
@@ -329,9 +371,10 @@ tExp (EDiv e1 e2) = do
         return t1
     else throwError ("/ needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
 tExp (Call fname exps) = do
-    -- TODO tExp Call
-    (_, _, funcEnv, _) <- ask
-    return Null
+    (argTypes, _, returnType) <- tGetFunc fname
+    passedTypes <- tExpsToTypes exps
+    if argTypes == passedTypes then return returnType
+    else throwError ("Passed invalid arguments to function: " ++ (show fname))
 tExp (EVarArr name index) = do
     ar <- tGetVarType name
     indexType <- tExp index
@@ -345,9 +388,10 @@ tExp (EStrAtt name attr) = do
     t <- tGetVarType name
     case t of
       TStruct attrsMap -> do
-          if (Data.Map.lookup attr attrsMap) /= Nothing then
-              return $ attrsMap ! attr
-          else throwError ("Struct variable " ++ (show name) ++ " does not have attribute: " ++ (show attr))
+          let c = Data.Map.lookup attr attrsMap
+          case c of
+            Just t -> return t
+            Nothing -> throwError ("Struct variable " ++ (show name) ++ " does not have attribute: " ++ (show attr))
       _ -> throwError ("Variable " ++ (show name) ++ "is not a struct.")
 tExp (EPPos name) = do
     t <- tGetVarType name
@@ -461,6 +505,20 @@ tStatements (s:ss) = do
     env1 <- local (const env) $ tStatements ss
     return env1
 
+tBindArgument :: (TVar,TType) -> TypeChecker TEnv
+tBindArgument (name,val) = do
+    env <- ask
+    env1 <- local (const env) $ tSetVar name val
+    return env1
+
+tBindArguments :: [(TVar,TType)] -> TypeChecker TEnv
+tBindArguments [] = ask
+tBindArguments (a:as) = do
+    env <- ask
+    env1 <- local (const env) $ tBindArgument a
+    env2 <- local (const env1) $ tBindArguments as
+    return env2
+
 tDFunction :: Function -> TypeChecker (TEnv, TFun)
 tDFunction (FunOne fname fvars rtype stms) = do
     env <- ask
@@ -469,7 +527,9 @@ tDFunction (FunOne fname fvars rtype stms) = do
     let (_, vEnv, funcEnv, sEnv) = env
     let fEnv = (Null, vEnv, funcEnv, sEnv)
     let func = do
-        fEnv2 <- local (const fEnv) $ tSetFun fname ftypes rttype (TFun func)
+        args <- local (const fEnv) $ tParseVars fvars
+        fEnv1 <- local (const fEnv) $ tBindArguments args
+        fEnv2 <- local (const fEnv1) $ tSetFun fname ftypes rttype (TFun func)
         (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
         if returnType == rttype then return ()
         else throwError ("Function " ++ (show fname) ++ " returned invalid type, want: " ++ (show rttype) ++ ", got: " ++ (show returnType))
@@ -482,8 +542,14 @@ tDFunction (FunNone fname fvars stms) = do
     let (_, vEnv, funcEnv, sEnv) = env
     let fEnv = (Null, vEnv, funcEnv, sEnv)
     let func = do
-        fEnv2 <- local (const fEnv) $ tSetFun fname ftypes Null (TFun func)
-        (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
+        -- add arguments to env
+        args <- local (const fEnv) $ tParseVars fvars
+        fEnv2 <- local (const fEnv) $ tBindArguments args
+        -- add declared function to env
+        fEnv3 <- local (const fEnv2) $ tSetFun fname ftypes Null (TFun func)
+        -- execute
+        (returnType, _, _, _) <- local (const fEnv3) $ tStatements stms
+        -- check return type
         if returnType == Null then return ()
         else throwError ("Function " ++ (show fname) ++ " instead of Null returned " ++ (show returnType))
     let tfun = (TFun func)
@@ -493,25 +559,18 @@ tDFunction (FunStr fname fvars rstruct stms) = do
     env <- ask
     rttype <- tGetStructType rstruct
     let (_, vEnv, funcEnv, sEnv) = env
-    if (Data.Map.lookup rstruct sEnv) /= Nothing then do
-        ftypes <- tVarsToTypes fvars
-        let fEnv = (Null, vEnv, funcEnv, sEnv)
-        let func = do
-            ffEnv <- local (const fEnv) $ tSetFun fname ftypes (TReturn rstruct) (TFun func)
-            (returnType, _, _, _) <- local (const ffEnv) $ tStatements stms
-            if returnType == rttype then return ()
-            else throwError ("Function " ++ (show fname) ++ " returned invalid struct, want: " ++ (show rstruct))
-        let tfun = (TFun func)
-        envS <- local (const env) $ tSetFun fname ftypes (TReturn rstruct) tfun
-        return (envS, tfun)
-    else throwError ("Struct " ++ (show rstruct) ++ " does not exist")
-
-tParseVarsOnly :: [VarOnly] -> TypeChecker [(TVar,TType)]
-tParseVarsOnly [] = return []
-tParseVarsOnly (v:vs) = do
-    t <- tParseVarOnly v
-    ts <- tParseVarsOnly vs
-    return $ [t] ++ ts
+    ftypes <- tVarsToTypes fvars
+    let fEnv = (Null, vEnv, funcEnv, sEnv)
+    let func = do
+        args <- local (const fEnv) $ tParseVars fvars
+        fEnv1 <- local (const fEnv) $ tBindArguments args
+        fEnv2 <- local (const fEnv1) $ tSetFun fname ftypes (TReturn rstruct) (TFun func)
+        (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
+        if returnType == rttype then return ()
+        else throwError ("Function " ++ (show fname) ++ " returned invalid struct, want: " ++ (show rstruct))
+    let tfun = (TFun func)
+    envS <- local (const env) $ tSetFun fname ftypes (TReturn rstruct) tfun
+    return (envS, tfun)
 
 tDStruct :: Struct -> TypeChecker TEnv
 tDStruct (IStruct name vars) = do
