@@ -364,7 +364,16 @@ tStatement (SIf exp stm) = do
     if b == Types.TBool then do
         env <- tStatement stm
         return env
-    else throwError ("If requires boolean value, got: " ++ (show b))
+    else throwError ("If statement requires boolean value, got: " ++ (show b))
+tStatement (SIfElse exp stmok stmelse) = do
+    env <- ask
+    b <- tExp exp
+    if b == Types.TBool then do
+        env1 <- local (const env) $ tStatement stmok
+        env1 <- local (const env) $ tStatement stmelse
+        return env
+    else throwError ("If statement requires boolean value, got: " ++ (show b))
+
 tStatement s = throwError ("tStatement: Not implemented: " ++ (show s))
 
 tStatements :: [Stm] -> TypeChecker TEnv
