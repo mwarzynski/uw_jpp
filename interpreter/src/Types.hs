@@ -238,6 +238,30 @@ tExp (EGt2 e1 e2 e3) = do
     if t1 == t2 && t2 == t3 then
         return Types.TBool
     else throwError ("a > b > c needs the same types, got: " ++ (show t1) ++ ", " ++ (show t2) ++ ", " ++ (show t3))
+tExp (EAdd e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 && (t1 == Types.TInt || t2 == Types.TFloat || t2 == Types.TStr) then
+        return t1
+    else throwError ("+ needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (ESub e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 && (t1 == Types.TInt || t1 == Types.TFloat) then
+        return t1
+    else throwError ("- needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (EMul e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 && (t1 == Types.TInt || t1 == Types.TFloat) then
+        return t1
+    else throwError ("* needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
+tExp (EDiv e1 e2) = do
+    t1 <- tExp e1
+    t2 <- tExp e2
+    if t1 == t2 && (t1 == Types.TInt || t1 == Types.TFloat) then
+        return t1
+    else throwError ("/ needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
 tExp (Call fname exps) = do
     (_, _, funcEnv, _) <- ask
     return Null
