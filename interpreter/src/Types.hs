@@ -373,8 +373,19 @@ tStatement (SIfElse exp stmok stmelse) = do
         env1 <- local (const env) $ tStatement stmelse
         return env
     else throwError ("If statement requires boolean value, got: " ++ (show b))
-
-tStatement s = throwError ("tStatement: Not implemented: " ++ (show s))
+tStatement (SReturnOne exp) = do
+    env <- ask
+    let (expT, _, _, _) = env
+    t <- tExp exp
+    if t == expT then return env
+    else throwError ("Invalid return value type: want: " ++ (show expT) ++ ", got: " ++ (show t))
+tStatement SReturn = do
+    env <- ask
+    let (expT, _, _, _) = env
+    if expT == Null then return env
+    else throwError ("Invalid return value, function does not return value.")
+tStatement SJContinue = ask
+tStatement SJBreak = ask
 
 tStatements :: [Stm] -> TypeChecker TEnv
 tStatements [] = ask
