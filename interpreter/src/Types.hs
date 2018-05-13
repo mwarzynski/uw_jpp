@@ -108,7 +108,15 @@ tVarOnly vo = case vo of
         let ttype = typeToTType itype
         env1 <- local (const env) $ tSetVar name (TArray ttype)
         return env1
-    _ -> throwError (show vo)
+    _ -> throwError ("tVarOnly not implemented: " ++ (show vo))
+
+tExpsHaveType :: [Exp] -> TType -> TypeChecker ()
+tExpsHaveType [] _ = return ()
+tExpsHaveType (e:es) t = do
+    et <- tExp e
+    if et == t then (tExpsHaveType es t)
+    else throwError ("Checking list of exps, invalid type: want: " ++ (show t) ++ ", got: " ++ (show et))
+
 tVarExpr :: VarExpr -> TypeChecker TEnv
 tVarExpr vr = case vr of
     DecSet name vtype exp -> do
@@ -119,9 +127,22 @@ tVarExpr vr = case vr of
         else do
             env1 <- local (const env) $ tSetVar name t
             return env1
-    -- DecArr name itype exps ->
-    -- DecAtructSet name sname exp ->
-    -- DecArrMulInit name itype length exp ->
+    DecArr name itype exps -> do
+        env <- ask
+        let it = typeToTType itype
+        tExpsHaveType exps it
+        env1 <- local (const env) $ tSetVar name (TArray it)
+        return env1
+    -- DecStructSet name sname exp ->
+    DecArrMulInit name itype _ exp -> do
+        env <- ask
+        let it = typeToTType itype
+        expT <- tExp exp
+        if it == expT then do
+            env1 <- local (const env) $ tSetVar name (TArray it)
+            return env1
+        else throwError ("Array declaration, invalid expression type: want: " ++ (show it) ++ ", got: " ++ (show expT))
+    _ -> throwError ("tVarExpr not implemented " ++ (show vr))
 
 tVar :: Var -> TypeChecker TEnv
 tVar v = case v of
