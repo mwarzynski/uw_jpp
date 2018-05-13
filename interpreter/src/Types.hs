@@ -612,16 +612,9 @@ tDStruct (IStruct name vars) = do
     env1 <- local (const env) $ tSetStruct name (TStruct struct)
     return env1
 
--- TODO: implement declaring global variables
 tDVar :: Var -> TypeChecker TEnv
-tDVar (DVarOnly vo) = tDVarOnly vo
-tDVar (DVarExpr vr) = tDVarExpr vr
-
-tDVarOnly :: VarOnly -> TypeChecker TEnv
-tDVarOnly vo = throwError ("tDVarOnly not implemented: " ++ (show vo))
-
-tDVarExpr :: VarExpr -> TypeChecker TEnv
-tDVarExpr vr = throwError ("tDVarExpr not implemented: " ++ (show vr))
+tDVar (DVarOnly vo) = tVarOnly vo
+tDVar (DVarExpr vr) = tVarExpr vr
 
 tDeclaration :: Decl -> TypeChecker TEnv
 tDeclaration (DFunction f) = do
