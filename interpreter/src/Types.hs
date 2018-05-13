@@ -192,6 +192,27 @@ tExpsHaveType (e:es) t = do
     if et == t then (tExpsHaveType es t)
     else throwError ("Checking list of exps, invalid type: want: " ++ (show t) ++ ", got: " ++ (show et))
 
+tCheckLen :: [Exp] -> TypeChecker TType
+tCheckLen [] = throwError "Function len requires one argument."
+tCheckLen (e:es) = if length es > 0 then throwError "Function len requires one argument." else do
+    t <- tExp e
+    case t of
+      TArray _ -> return Types.TInt
+      _ -> throwError "Function len requires one argument which must be an array."
+
+tCheckParseInt :: [Exp] -> TypeChecker TType
+tCheckParseInt [] = throwError "Function parse_int requires one argument."
+tCheckParseInt (e:es) = do
+    if length es > 0 then
+        throwError "Function parse_int requires one argument"
+    else do
+        t <- tExp e
+        case t of
+          Types.TStr -> return Types.TInt
+          _ -> throwError ("Function parse_int requires one arguent which must be a string")
+
+
+
 tVarExpr :: VarExpr -> TypeChecker TEnv
 tVarExpr vr = case vr of
     DecSet name vtype exp -> do
@@ -370,11 +391,22 @@ tExp (EDiv e1 e2) = do
     if t1 == t2 && (t1 == Types.TInt || t1 == Types.TFloat) then
         return t1
     else throwError ("/ needs the valid types, got: " ++ (show t1) ++ " and " ++ (show t2))
+
 tExp (Call fname exps) = do
-    (argTypes, _, returnType) <- tGetFunc fname
-    passedTypes <- tExpsToTypes exps
-    if argTypes == passedTypes then return returnType
-    else throwError ("Passed invalid arguments to function: " ++ (show fname))
+    if fname == (Ident "print") then
+        return Null
+    else
+        if fname == (Ident "len") then
+            tCheckLen exps
+        else
+            if fname == (Ident "parse_int") then
+                tCheckParseInt exps
+            else do
+                (argTypes, _, returnType) <- tGetFunc fname
+                passedTypes <- tExpsToTypes exps
+                if argTypes == passedTypes then return returnType
+                else throwError ("Passed invalid arguments to function: " ++ (show fname))
+
 tExp (EVarArr name index) = do
     ar <- tGetVarType name
     indexType <- tExp index
@@ -580,6 +612,7 @@ tDStruct (IStruct name vars) = do
     env1 <- local (const env) $ tSetStruct name (TStruct struct)
     return env1
 
+-- TODO: implement declaring global variables
 tDVar :: Var -> TypeChecker TEnv
 tDVar (DVarOnly vo) = tDVarOnly vo
 tDVar (DVarExpr vr) = tDVarExpr vr
