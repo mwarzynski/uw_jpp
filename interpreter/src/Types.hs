@@ -67,6 +67,13 @@ tSetFun fname types returnType fun = do
     (returnType, envVar, envFun, envStruct) <- ask
     return (returnType, envVar, insert fname (types, fun, returnType) envFun, envStruct)
 
+tSetStruct :: TSName -> TType -> TypeChecker TEnv
+tSetStruct name value = case value of
+    TStruct v -> do
+        (rType, envVar, envFun, envStruct) <- ask
+        return (rType, envVar, envFun, insert name (TStruct v) envStruct)
+    _ -> throwError ("tSetStruct expected struct, but got invalid value: " ++ (show value))
+
 typeToTType :: Type -> TType
 typeToTType AbsGrammar.TInt = Types.TInt
 typeToTType AbsGrammar.TFloat = Types.TFloat
@@ -77,8 +84,25 @@ checkTypes :: [TType] -> [TType] -> TypeChecker ()
 checkTypes [] [] = return ()
 checkTypes (a:as) (b:bs) = if a == b then checkTypes as bs else throwError "no i chuj, nie pykło"
 
+tParseVarOnly :: VarOnly -> TypeChecker (TVar,TType)
+tParseVarOnly (Dec n t) = do
+    let tt = typeToTType t
+    return (n,tt)
+tParseVarOnly (DecStruct n sname) = do
+    t <- tGetStructType sname
+    return (n, t)
+tParseVarOnly (DecDict n key value) = do
+    let tkey = typeToTType key
+    let tval = typeToTType value
+    return (n, (TDict (tkey, tval)))
+tParseVarOnly (DecArrMul n t _) = do
+    let tt = typeToTType t
+    return (n, (TArray tt))
+
 tVarToType :: Var -> TypeChecker TType
-tVarToType _ = return Null
+tVarToType (DVarOnly v) = do
+    (_, t) <- tParseVarOnly v
+    return t
 
 tVarsToTypes :: [Var] -> TypeChecker [TType]
 tVarsToTypes [] = return $ []
@@ -105,7 +129,11 @@ tVarOnly vo = case vo of
         env <- ask
         env1 <- local (const env) $ tSetVar name (typeToTType vtype)
         return env1
-    -- DecStruct name stype
+    DecStruct name stype -> do
+        env <- ask
+        v <- tGetStructType stype
+        env1 <- local (const env) $ tSetVar name v
+        return env1
     DecDict name ktype vtype -> do
         let kt = typeToTType ktype
         let vt = typeToTType vtype
@@ -116,7 +144,6 @@ tVarOnly vo = case vo of
         let ttype = typeToTType itype
         env1 <- local (const env) $ tSetVar name (TArray ttype)
         return env1
-    _ -> throwError ("tVarOnly not implemented: " ++ (show vo))
 
 tExpsHaveType :: [Exp] -> TType -> TypeChecker ()
 tExpsHaveType [] _ = return ()
@@ -180,7 +207,17 @@ tExp (EAssArr name indexExp valExp) = do
                                     throwError ("Assigning to " ++ (show name) ++ " - invalid value type: want: " ++ (show vType) ++ ", got: " ++ (show valType))
                                 else return Null
       _ -> throwError ("Invalid index type for " ++ (show name) ++ ", want: int, got: " ++ (show indexExp))
-tExp (EAssStr name attrName value) = throwError ("EAssStr: Not implemented")
+tExp (EAssStr name attrName value) = do
+    env <- ask
+    t <- tGetVarType name
+    case t of
+        TStruct struct -> if (Data.Map.lookup attrName struct) /= Nothing then do
+                            vt <- tExp value
+                            let expectedVT = struct ! attrName
+                            if vt == expectedVT then return Null
+                            else throwError ("Invalid type while assigning to attribute")
+                          else throwError ("Struct attribute does not exist")
+        _ -> throwError ("Variable " ++ (show name) ++ " is not a struct.")
 tExp (EEPlus name exp) = do
     env <- ask
     t <- tGetVarType name
@@ -305,7 +342,6 @@ tExp (EVarArr name index) = do
                                   else throwError ("Accessing dict " ++ (show name) ++ " with invalid key type: want: " ++ (show keyType) ++ ", got: " ++ (show indexType))
       _ -> throwError ("Accessing invalid variable type: " ++ (show name))
 tExp (EStrAtt name attr) = do
-    -- TODO check this shit
     t <- tGetVarType name
     case t of
       TStruct attrsMap -> do
@@ -470,8 +506,20 @@ tDFunction (FunStr fname fvars rstruct stms) = do
         return (envS, tfun)
     else throwError ("Struct " ++ (show rstruct) ++ " does not exist")
 
+tParseVarsOnly :: [VarOnly] -> TypeChecker [(TVar,TType)]
+tParseVarsOnly [] = return []
+tParseVarsOnly (v:vs) = do
+    t <- tParseVarOnly v
+    ts <- tParseVarsOnly vs
+    return $ [t] ++ ts
+
 tDStruct :: Struct -> TypeChecker TEnv
-tDStruct (IStruct name vars) = throwError ("tDStruct not implemented: " ++ (show name) ++ " -> " ++ (show vars))
+tDStruct (IStruct name vars) = do
+    env <- ask
+    attrs <- tParseVarsOnly vars
+    let struct = (Data.Map.fromList attrs)
+    env1 <- local (const env) $ tSetStruct name (TStruct struct)
+    return env1
 
 tDVar :: Var -> TypeChecker TEnv
 tDVar (DVarOnly vo) = tDVarOnly vo
