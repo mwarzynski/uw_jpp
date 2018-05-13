@@ -21,7 +21,7 @@ data TType
     | TStr
     | TBool
     | TDict (TType, TType)
-    | TStruct [(TVar,TType)]
+    | TStruct (Map TVar TType)
     | TArray TType
     | TReturn TSName
     | Null
@@ -275,12 +275,50 @@ tExp (EVarArr name index) = do
       TDict (keyType, valType) -> if indexType == keyType then return valType
                                   else throwError ("Accessing dict " ++ (show name) ++ " with invalid key type: want: " ++ (show keyType) ++ ", got: " ++ (show indexType))
       _ -> throwError ("Accessing invalid variable type: " ++ (show name))
-
+tExp (EStrAtt name attr) = do
+    -- TODO check this shit
+    t <- tGetVarType name
+    case t of
+      TStruct attrsMap -> do
+          if (Data.Map.lookup attr attrsMap) /= Nothing then
+              return $ attrsMap ! attr
+          else throwError ("Struct variable " ++ (show name) ++ " does not have attribute: " ++ (show attr))
+      _ -> throwError ("Variable " ++ (show name) ++ "is not a struct.")
+tExp (EPPos name) = do
+    t <- tGetVarType name
+    case t of
+      Types.TInt -> return Types.TInt
+      Types.TFloat -> return Types.TFloat
+      _ -> throwError ("Could not execute ++ on type: " ++ (show t) ++ " for variable " ++ (show name))
+tExp (EMMin name) = do
+    t <- tGetVarType name
+    case t of
+      Types.TInt -> return Types.TInt
+      Types.TFloat -> return Types.TFloat
+      _ -> throwError ("Could not execute ++ on type: " ++ (show t) ++ " for variable " ++ (show name))
+tExp (EBNeg exp) = do
+    t <- tExp exp
+    if t == Types.TBool then return Types.TBool
+    else throwError ("Could not negate non-boolean value, got: " ++ (show t))
+tExp (ENeg exp) = do
+    t <- tExp exp
+    case t of
+      Types.TInt -> return Types.TInt
+      Types.TFloat -> return Types.TFloat
+      _ -> throwError ("Could not negate value " ++ (show t))
+tExp (EPos exp) = do
+    t <- tExp exp
+    case t of
+      Types.TInt -> return Types.TInt
+      Types.TFloat -> return Types.TFloat
+      _ -> throwError ("Could not positive value " ++ (show t))
+tExp (EVar name) = do
+    t <- tGetVarType name
+    return t
 tExp (EStr s) = return Types.TStr
 tExp (EInt i) = return Types.TInt
 tExp (EFloat f) = return Types.TFloat
 tExp (EBool b) = return Types.TBool
-tExp e = throwError ("tExp: Not implemented: " ++ (show e))
 
 
 tStatement :: Stm -> TypeChecker TEnv
