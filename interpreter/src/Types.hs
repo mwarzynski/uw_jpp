@@ -54,6 +54,14 @@ tGetVarType var = do
         return t
     else throwError ("Variable was not declared before: " ++ (show var))
 
+tGetStructType :: TSName -> TypeChecker TType
+tGetStructType name = do
+    (_, _, _, envStruct) <- ask
+    if (Data.Map.lookup name envStruct) /= Nothing then do
+        let s = envStruct ! name
+        return s
+    else throwError ("Struct " ++ (show name) ++ " was not defined.")
+
 tSetFun :: TFName -> [TType] -> TType -> TFun -> TypeChecker TEnv
 tSetFun fname types returnType fun = do
     (returnType, envVar, envFun, envStruct) <- ask
@@ -396,14 +404,16 @@ tStatement (SIfElse exp stmok stmelse) = do
     else throwError ("If statement requires boolean value, got: " ++ (show b))
 tStatement (SReturnOne exp) = do
     env <- ask
-    let (expT, _, _, _) = env
+    let (expT, a, b, c) = env
     t <- tExp exp
     if t == expT then return env
+    else if expT == Null then return (t, a, b, c)
     else throwError ("Invalid return value type: want: " ++ (show expT) ++ ", got: " ++ (show t))
 tStatement SReturn = do
     env <- ask
-    let (expT, _, _, _) = env
-    if expT == Null then return env
+    let (expT, a, b, c) = env
+    if expT == Null then
+        return (expT, a, b, c)
     else throwError ("Invalid return value, function does not return value.")
 tStatement SJContinue = ask
 tStatement SJBreak = ask
@@ -420,37 +430,43 @@ tDFunction (FunOne fname fvars rtype stms) = do
     env <- ask
     ftypes <- tVarsToTypes fvars
     let rttype = typeToTType rtype
+    let (_, vEnv, funcEnv, sEnv) = env
+    let fEnv = (Null, vEnv, funcEnv, sEnv)
     let func = do
-        (_, a, b, c) <- local (const env) $ tSetFun fname ftypes rttype (TFun func)
-        let env1 = (rttype, a, b, c)
-        local (const env1) $ tStatements stms
-        return ()
+        fEnv2 <- local (const fEnv) $ tSetFun fname ftypes rttype (TFun func)
+        (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
+        if returnType == rttype then return ()
+        else throwError ("Function " ++ (show fname) ++ " returned invalid type, want: " ++ (show rttype) ++ ", got: " ++ (show returnType))
     let tfun = (TFun func)
     envS <- local (const env) $ tSetFun fname ftypes rttype tfun
     return (envS, tfun)
 tDFunction (FunNone fname fvars stms) = do
     env <- ask
     ftypes <- tVarsToTypes fvars
+    let (_, vEnv, funcEnv, sEnv) = env
+    let fEnv = (Null, vEnv, funcEnv, sEnv)
     let func = do
-        (_, a, b, c) <- local (const env) $ tSetFun fname ftypes Null (TFun func)
-        let env1 = (Null, a, b, c)
-        local (const env1) $ tStatements stms
-        return ()
+        fEnv2 <- local (const fEnv) $ tSetFun fname ftypes Null (TFun func)
+        (returnType, _, _, _) <- local (const fEnv2) $ tStatements stms
+        if returnType == Null then return ()
+        else throwError ("Function " ++ (show fname) ++ " instead of Null returned " ++ (show returnType))
     let tfun = (TFun func)
     envS <- local (const env) $ tSetFun fname ftypes Null tfun
     return (envS, tfun)
 tDFunction (FunStr fname fvars rstruct stms) = do
     env <- ask
-    let (_, _, _, sEnv) = env
+    rttype <- tGetStructType rstruct
+    let (_, vEnv, funcEnv, sEnv) = env
     if (Data.Map.lookup rstruct sEnv) /= Nothing then do
         ftypes <- tVarsToTypes fvars
+        let fEnv = (Null, vEnv, funcEnv, sEnv)
         let func = do
-            (_, a, b, c) <- local (const env) $ tSetFun fname ftypes (TReturn rstruct) (TFun func)
-            let env1 = ((TReturn rstruct), a, b, c)
-            local (const env1) $ tStatements stms
-            return ()
+            ffEnv <- local (const fEnv) $ tSetFun fname ftypes (TReturn rstruct) (TFun func)
+            (returnType, _, _, _) <- local (const ffEnv) $ tStatements stms
+            if returnType == rttype then return ()
+            else throwError ("Function " ++ (show fname) ++ " returned invalid struct, want: " ++ (show rstruct))
         let tfun = (TFun func)
-        envS <- local (const env) $ tSetFun fname ftypes Null tfun
+        envS <- local (const env) $ tSetFun fname ftypes (TReturn rstruct) tfun
         return (envS, tfun)
     else throwError ("Struct " ++ (show rstruct) ++ " does not exist")
 
