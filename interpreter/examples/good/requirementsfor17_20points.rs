@@ -26,7 +26,7 @@ fn main() -> {
     arr: [int*10] = [5, .. ];
     print("11.b OK indexed arrays // arr[5]=", arr[5]);
 
-    i = 1.0 / 0.0;
+    i = 1 / 0;
 
     print("9. FAIL");
 }
