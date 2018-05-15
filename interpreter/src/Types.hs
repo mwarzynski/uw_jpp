@@ -89,7 +89,7 @@ typeToTType AbsGrammar.TBool = Types.TBool
 
 checkTypes :: [TType] -> [TType] -> TypeChecker ()
 checkTypes [] [] = return ()
-checkTypes (a:as) (b:bs) = if a == b then checkTypes as bs else throwError "no i chuj, nie pykło"
+checkTypes (a:as) (b:bs) = if a == b then checkTypes as bs else throwError ("Types don't match.")
 
 tParseVarOnly :: VarOnly -> TypeChecker (TVar,TType)
 tParseVarOnly (Dec n t) = do
