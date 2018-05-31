@@ -1,6 +1,6 @@
 % Mateusz Warzyński, 371854
 
-use_module(library(lists)).
+:- use_module(library(lists)).
 % Also (np. member/2, append/3, length/2)
 
 % jestWyborem(+AEGraf, -Graf)
@@ -39,6 +39,9 @@ jestWyboremE(AEGraf, [V | Vs]) :-
     jestWyboremEWierzcholek(AEGraf, V),
     jestWyboremE(AEGraf, Vs).
 
+% jestWyboremEWierzcholek(Ws, V)
+% Prawda jeśli graf złożony tylko z wierzchołka V spełnia założenia
+% dotyczące E-wierzchołków jeśli całkowitym grafem jest Ws.
 jestWyboremEWierzcholek(_, V) :- wierzcholekA(V).
 jestWyboremEWierzcholek([W | _], V) :-
     wierzcholekE(W),
@@ -55,22 +58,37 @@ jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | Vs]) :-
     Vlength > 0,
     listaIloczyn(Ws, Vs, X),
     X = 1.
-
 jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
     W = V,
     WType = e, VType = e,
     length(Ws, Wlength),
     Wlength = 0.
 
+
 % jestDFS(+Graf, -Lista)
-% Prawda gdy Lista jest lista identyfikatorów
+% Prawda gdy Lista jest listą identyfikatorów
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia
 % grafu Graf w głąb przy przejściu startujacym z pierwszego wierzchołka tego grafu
-% jestDFS(Graf, Lista) :- true.
+jestDFS(Vs, Ids) :- jestDFS2(Vs, Ids, []).
 
+jestDFS2(_, [], _).
+jestDFS2(Vs, [Id], Odwiedzone) :-
+    wierzcholekOID(Vs, Id, _),
+    \+ member(Id, Odwiedzone),
+    append(Odwiedzone, [Id], Odwiedzone2),
+    length(Odwiedzone2, Ol),
+    length(Vs, Vl),
+    Ol = Vl.
+jestDFS2(Vs, [Id, IdNast | Ids], Odwiedzone) :-
+    \+ member(Id, Odwiedzone),
+    append(Odwiedzone, [Id], Odwiedzone2),
+    wierzcholekOID(Vs, Id, V),
+    wierzcholekSasiedzi(V, Vsasiedzi),
+    member(IdNast, Vsasiedzi),
+    jestDFS2(Vs, [IdNast | Ids], Odwiedzone2).
 
 % jestADFS(+AEgraf, -Lista)
-% Prawda gdy Lista jest lista  ̨ identyfikatorów
+% Prawda gdy Lista jest listą identyfikatorów
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia w głab przy przejści
 % przez pewien graf będacy wyborem z AEgraf. W definicji tego predykatu należy jawnie
 % zbudować reprezentacje pewnego wyboru AE-grafu AEgraf.
@@ -84,12 +102,36 @@ jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
 % nie może jawnie być budowana reprezentacja wyboru AE-grafu AEgraf.
 % jestADFS1(AEGraf, Lista) :- true.
 
+
+wierzcholkiIstnieja(G, [Id, Ids]) :-
+    wierzcholekOID(G, Id, _),
+    wierzcholkiIstnieja(G, Ids).
+
+% wierzcholekOID(Vs, Id, Wynik)
+% Ustawia na Wynik wierzchołek o podanym Id z listy wierzchołków Vs.
+wierzcholekOID([V | _], Id, R) :-
+    wierzcholekID(V, VId),
+    VId = Id,
+    R = V.
+wierzcholekOID([_| Vs], Id, R) :- wierzcholekOID(Vs, Id, R).
+
 % wierzcholkiTeSame(V, W)
 % Prawda, jeśli obydwa wierzchołki są takie same.
 % Predykat nie sprawdza sąsiadów.
 wierzcholkiTeSame([V, Vt | _], [W, Wt | _]) :-
     V  = W,
     Vt = Wt.
+
+wierzcholekID([V | _], Id) :- Id is V.
+wierzcholekSasiedzi([_, _ | Vs], Sasiedzi) :- Sasiedzi = Vs.
+
+% wierzcholekA(V)
+% Prawda jeśli przekazany wierzchołek jest typu A.
+wierzcholekA([_, Typ | _]) :- Typ = a.
+
+% wierzcholekE(V)
+% Prawda jeśli przekazany wierzchołek jest typu A.
+wierzcholekE([_, Typ | _]) :- Typ = e.
 
 % listaPorownaj(A, B)
 % Prawda, jeśli wszystkie elementy listy A są również w liście B.
@@ -103,7 +145,4 @@ listaIloczyn(_, [], X) :- X is 0.
 listaIloczyn([A|As], B, X) :-
    listaIloczyn(As, B, Xx),
    ( member(A, B) -> X is Xx + 1 ; X is Xx ).
-
-wierzcholekA([_, Typ | _]) :- Typ = a.
-wierzcholekE([_, Typ | _]) :- Typ = e.
 
