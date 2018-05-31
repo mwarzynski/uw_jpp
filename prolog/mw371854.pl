@@ -75,34 +75,6 @@ jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia
 % grafu Graf w głąb przy przejściu startujacym z pierwszego wierzchołka tego grafu
 jestDFS(_, []) :- false.
-jestDFS([V | Vs], Ids) :-
-    wierzcholekID(V, Id),
-    jestDFS2([V | Vs], [Id | Ids], [], [], Odwiedzone),
-    length(Odwiedzone, Ol),
-    length([V | Vs], Vl),
-    Ol = Vl.
-
-% jestDFS2(Vs, DoOdwiedzenia, Odwiedzone, DoOdwiedzeniaPo, OdwiedzonePo)
-jestDFS2(Vs, [Id], Odwiedzone, DoOdwiedzeniaPo, OdwiedzonePo) :-
-    not(member(Id, Odwiedzone)),
-    wierzcholekOID(Vs, Id, _),
-    DoOdwiedzeniaPo = [],
-    append(Odwiedzone, [Id], X),
-    OdwiedzonePo = X.
-    
-jestDFS2(Vs, [Id, IdNast | Ids], Odwiedzone, DoOdwiedzeniaPo, OdwiedzonePo) :- 
-    not(member(Id, Odwiedzone)),
-    wierzcholekOID(Vs, Id, V),
-    wierzcholekSasiedzi(V, VSasiedzi),
-    member(IdNast, VSasiedzi),
-    append(Odwiedzone, [Id], Odwiedzone2),
-    ( jestDFS2(Vs, [IdNast | Ids], Odwiedzone2, DOP, OPO) -> (
-        DoOdwiedzeniaPo = DOP,
-        OdwiedzonePo = OPO ) ; (
-        jestDFS2(Vs, DOP, OPO, DOP2, OPO2),
-        DoOdwiedzeniaPo = DOP2,
-        OdwiedzonePo = OPO2 )
-    ).
 
 
 % jestADFS(+AEgraf, -Lista)
