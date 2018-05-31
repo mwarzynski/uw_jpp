@@ -69,7 +69,10 @@ jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
 % Prawda gdy Lista jest listą identyfikatorów
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia
 % grafu Graf w głąb przy przejściu startujacym z pierwszego wierzchołka tego grafu
-jestDFS(Vs, Ids) :- jestDFS2(Vs, Ids, []).
+jestDFS(_, []) :- false.
+jestDFS([V | Vs], Ids) :-
+    wierzcholekID(V, Id),
+    jestDFS2([V | Vs], [Id | Ids], []).
 
 jestDFS2(_, [], _).
 jestDFS2(Vs, [Id], Odwiedzone) :-
