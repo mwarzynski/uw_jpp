@@ -7,7 +7,12 @@
 % Prawda jeśli Graf jest wyborem AEGraf.
 % Gdy dla AEgraf istnieje wiele wyborów, predykat powinien
 % odnosić wielokrotnie sukces, przynajmniej raz dla każdego wyboru.
-jestWyborem(AEGraf, Graf) :- jestWyboremA(AEGraf, Graf), jestWyboremE(AEGraf, Graf).
+jestWyborem(AEGraf, Graf) :-
+    length(AEGraf, L1),
+    length(Graf, L2),
+    L1 = L2,
+    jestWyboremA(AEGraf, Graf),
+    jestWyboremE(AEGraf, Graf).
 
 % jestWyboremA(+AEGraf, -Graf)
 % Prawda jeśli dla każdego v ∈ Va, i każdego <v, v'> ∈ R zachodzi <v, v'> ∈ S.
@@ -72,23 +77,33 @@ jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
 jestDFS(_, []) :- false.
 jestDFS([V | Vs], Ids) :-
     wierzcholekID(V, Id),
-    jestDFS2([V | Vs], [Id | Ids], []).
-
-jestDFS2(_, [], _).
-jestDFS2(Vs, [Id], Odwiedzone) :-
-    wierzcholekOID(Vs, Id, _),
-    \+ member(Id, Odwiedzone),
-    append(Odwiedzone, [Id], Odwiedzone2),
-    length(Odwiedzone2, Ol),
-    length(Vs, Vl),
+    jestDFS2([V | Vs], [Id | Ids], [], [], Odwiedzone),
+    length(Odwiedzone, Ol),
+    length([V | Vs], Vl),
     Ol = Vl.
-jestDFS2(Vs, [Id, IdNast | Ids], Odwiedzone) :-
-    \+ member(Id, Odwiedzone),
-    append(Odwiedzone, [Id], Odwiedzone2),
+
+% jestDFS2(Vs, DoOdwiedzenia, Odwiedzone, DoOdwiedzeniaPo, OdwiedzonePo)
+jestDFS2(Vs, [Id], Odwiedzone, DoOdwiedzeniaPo, OdwiedzonePo) :-
+    not(member(Id, Odwiedzone)),
+    wierzcholekOID(Vs, Id, _),
+    DoOdwiedzeniaPo = [],
+    append(Odwiedzone, [Id], X),
+    OdwiedzonePo = X.
+    
+jestDFS2(Vs, [Id, IdNast | Ids], Odwiedzone, DoOdwiedzeniaPo, OdwiedzonePo) :- 
+    not(member(Id, Odwiedzone)),
     wierzcholekOID(Vs, Id, V),
-    wierzcholekSasiedzi(V, Vsasiedzi),
-    member(IdNast, Vsasiedzi),
-    jestDFS2(Vs, [IdNast | Ids], Odwiedzone2).
+    wierzcholekSasiedzi(V, VSasiedzi),
+    member(IdNast, VSasiedzi),
+    append(Odwiedzone, [Id], Odwiedzone2),
+    ( jestDFS2(Vs, [IdNast | Ids], Odwiedzone2, DOP, OPO) -> (
+        DoOdwiedzeniaPo = DOP,
+        OdwiedzonePo = OPO ) ; (
+        jestDFS2(Vs, DOP, OPO, DOP2, OPO2),
+        DoOdwiedzeniaPo = DOP2,
+        OdwiedzonePo = OPO2 )
+    ).
+
 
 % jestADFS(+AEgraf, -Lista)
 % Prawda gdy Lista jest listą identyfikatorów
