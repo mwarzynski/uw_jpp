@@ -90,7 +90,8 @@ jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
     not(member(Id, Odwiedzone)),
     wierzcholekOID(Graf, Id, V),
     wierzcholekSasiedzi(V, S),
-    append(S, Stos, NowyStos),
+    listaPermutuj(S, NS),
+    append(NS, Stos, NowyStos),
     jestDFS2(Graf, NowyStos, [Id | Odwiedzone], Wynik).
 
 % jestADFS(+AEgraf, -Lista)
@@ -156,4 +157,10 @@ listaOdwroc([], []).
 listaOdwroc([H|T],Z) :-
     listaOdwroc(T,Z1),
     append(Z1, [H], Z).
+
+listaPermutuj([X|Y],Z) :- listaPermutuj(Y,W), listaZamien(X,Z,W).
+listaPermutuj([],[]).
+
+listaZamien(X, [X|R], R).
+listaZamien(X, [F|R], [F|S]) :- listaZamien(X,R,S).
 
