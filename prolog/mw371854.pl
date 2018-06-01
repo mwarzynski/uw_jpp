@@ -120,9 +120,9 @@ listaOdwroc([H|T],Z) :-
 listaPermutuj([],[]).
 listaPermutuj([X|Y],Z) :-
     listaPermutuj(Y,W),
-    listaZamien(X,Z,W).
+    listaPermutuj2(X,Z,W).
 
-listaZamien(X, [X|R], R).
-listaZamien(X, [F|R], [F|S]) :-
-    listaZamien(X,R,S).
+listaPermutuj2(X, [X | R], R).
+listaPermutuj2(X, [F | R], [F | S]) :-
+    listaPermutuj2(X, R, S).
 
