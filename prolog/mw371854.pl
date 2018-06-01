@@ -56,11 +56,8 @@ jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
 % przez pewien graf będacy wyborem z AEgraf. W definicji tego predykatu należy jawnie
 % zbudować reprezentacje pewnego wyboru AE-grafu AEgraf.
 jestADFS(AEGraf, Lista) :-
-    jestDFS(AEGraf, Lista),
-    listaDoGraf(AEGraf, Lista, Wybor),
-    write(AEGraf), write("\n"),
-    write(Wybor), write("\n"),
-    jestWyborem(AEGraf, Wybor).
+    jestWyborem(AEGraf, W),
+    jestDFS(W, Lista).
 
 % jestADFS1(+AEGraf, -Lista)
 % Prawda gdy Lista jest lista identyfikatorów
@@ -95,12 +92,25 @@ listaDoGraf([H|T], Lista, Graf) :-
     wierzcholekPrzytnij(HId, Htyp, Hs, NV),
     append([NV], Gg, Graf).
 
+grafDoLista([], Lista) :- Lista = [].
+grafDoLista([G|Gs], Lista) :-
+    grafDoLista(Gs, L),
+    wierzcholekID(G, GId),
+    append([GId], L, Lista).
+
 wierzcholekPrzytnij(VId, a, Vs, V) :-
     append([VId, a], Vs, V).
 wierzcholekPrzytnij(VId, e, [], V) :-
     V = [VId, e].
 wierzcholekPrzytnij(VId, e, [Vs | _], V) :-
     append([VId, e], Vs, V).
+
+% listaPorownaj(A, B)
+% Prawda, jeśli wszystkie elementy listy A są również w liście B.
+listaPorownaj([], _).
+listaPorownaj([A|As], B) :-
+    member(A, B),
+    listaPorownaj(As, B).
 
 listaOdwroc([], []).
 listaOdwroc([H|T],Z) :-
