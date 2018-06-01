@@ -7,10 +7,24 @@
 % Prawda jeśli Graf jest wyborem AEGraf.
 % Gdy dla AEgraf istnieje wiele wyborów, predykat powinien
 % odnosić wielokrotnie sukces, przynajmniej raz dla każdego wyboru.
-jestWyborem(AEGraf, Graf) :-
-    jestWyboremA(AEGraf, Graf),
-    jestWyboremE(AEGraf, Graf).
+jestWyborem([], []).
+jestWyborem([A|As], [G|Gs]) :-
+    wierzcholekID(A, Aid),
+    wierzcholekID(G, Gid),
+    Aid = Gid,
+    wierzcholekSasiedzi(A, Asasiedzi),
+    wierzcholekSasiedzi(G, Gsasiedzi),
+    wierzcholekTyp(A, Atyp),
+    wierzcholekTyp(G, Gtyp),
+    Atyp = Gtyp,
+    jestWyboremWierzcholki(Gtyp, Asasiedzi, Gsasiedzi),
+    jestWyborem(As, Gs).
 
+jestWyboremWierzcholki(e, [], []).
+jestWyboremWierzcholki(e, As, [G]) :-
+    member(G, As).
+jestWyboremWierzcholki(a, As, Gs) :-
+    listaPermutuj(As, Gs).
 
 % jestDFS(+Graf, -Lista)
 % Prawda gdy Lista jest listą identyfikatorów
@@ -74,16 +88,17 @@ wierzcholkiTeSame([V, Vt | _], [W, Wt | _]) :-
     V  = W,
     Vt = Wt.
 
-wierzcholekID([V | _], Id) :- Id is V.
+wierzcholekID([V | _], Id) :- Id = V.
 wierzcholekSasiedzi([_, _ | Vs], Sasiedzi) :- Sasiedzi = Vs.
 
-% wierzcholekA(V)
-% Prawda jeśli przekazany wierzchołek jest typu A.
-wierzcholekA([_, Typ | _]) :- Typ = a.
+wierzcholekTyp([_, Typ | _], T) :- T = Typ.
 
-% wierzcholekE(V)
-% Prawda jeśli przekazany wierzchołek jest typu A.
-wierzcholekE([_, Typ | _]) :- Typ = e.
+grafDoLista([], Lista) :- Lista = [].
+grafDoLista([G|Gs], Lista) :-
+    grafDoLista(Gs, L),
+    wierzcholekID(G, Id),
+    append(L, [Id], Ll),
+    Lista = Ll.
 
 listaDoGraf(_, [], Graf) :- Graf = [].
 listaDoGraf(AEGraf, [H|T], Graf) :-
