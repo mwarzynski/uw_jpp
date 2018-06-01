@@ -24,7 +24,7 @@ jestWyboremWierzcholki(e, [], []).
 jestWyboremWierzcholki(e, As, [G]) :-
     member(G, As).
 jestWyboremWierzcholki(a, As, Gs) :-
-    listaPermutuj(As, Gs).
+    permutation(As, Gs).
 
 % jestDFS(+Graf, -Lista)
 % Prawda gdy Lista jest listą identyfikatorów
@@ -38,7 +38,7 @@ jestDFS([G | Gs], Lista) :-
 % jestDFS2(Graf, ListaPrzejscia, Odwiedzone, Wynik)
 % Predykat pomocniczy dla jestDFS.
 jestDFS2(_, [], Odwiedzone, Wynik) :-
-    listaOdwroc(Odwiedzone, Wynik).
+    reverse(Odwiedzone, Wynik).
 jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
     member(Id, Odwiedzone),
     jestDFS2(Graf, Stos, Odwiedzone, Wynik).
@@ -46,7 +46,7 @@ jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
     not(member(Id, Odwiedzone)),
     wierzcholekOID(Graf, Id, V),
     wierzcholekSasiedzi(V, S),
-    listaPermutuj(S, NS),
+    permutation(S, NS),
     append(NS, Stos, NowyStos),
     jestDFS2(Graf, NowyStos, [Id | Odwiedzone], Wynik).
 
@@ -111,18 +111,4 @@ listaPorownaj([], _).
 listaPorownaj([A|As], B) :-
     member(A, B),
     listaPorownaj(As, B).
-
-listaOdwroc([], []).
-listaOdwroc([H|T],Z) :-
-    listaOdwroc(T,Z1),
-    append(Z1, [H], Z).
-
-listaPermutuj([],[]).
-listaPermutuj([X|Y],Z) :-
-    listaPermutuj(Y,W),
-    listaPermutuj2(X,Z,W).
-
-listaPermutuj2(X, [X | R], R).
-listaPermutuj2(X, [F | R], [F | S]) :-
-    listaPermutuj2(X, R, S).
 
