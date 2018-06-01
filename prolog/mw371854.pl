@@ -11,61 +11,6 @@ jestWyborem(AEGraf, Graf) :-
     jestWyboremA(AEGraf, Graf),
     jestWyboremE(AEGraf, Graf).
 
-% jestWyboremA(+AEGraf, -Graf)
-% Prawda jeśli dla każdego v ∈ Va, i każdego <v, v'> ∈ R zachodzi <v, v'> ∈ S.
-jestWyboremA(_, []).
-jestWyboremA(AEGraf, [V | Vs]) :-
-    jestWyboremAWierzcholek(AEGraf, V),
-    jestWyboremA(AEGraf, Vs).
-
-% jestWyboremAWierzcholek(Ws, V)
-% Prawda jeśli graf złożony tylko z wierzchołka V spełnia założenia
-% dotyczące A-wierzchołków jeśli całkowitym grafem jest Ws.
-jestWyboremAWierzcholek(_, V) :- wierzcholekE(V).
-jestWyboremAWierzcholek([W | _], V) :-
-    wierzcholekA(W),
-    wierzcholkiTeSame(W, V),
-    jestWyboremASprawdzWierzcholki(W, V).
-jestWyboremAWierzcholek([_ | Ws], V) :-
-    jestWyboremAWierzcholek(Ws, V).
-jestWyboremASprawdzWierzcholki([W, WType | Ws], [V, VType | Vs]) :-
-    W = V,
-    WType = a, VType = a,
-    listaPorownaj(Ws, Vs).
-
-% jestWyboremE(+AEGraf, -Graf)
-% Prawda jeśli dla każdego v ∈ Ve istnieje <v, v'> ∈ R dla pewnego v', to istnieje
-% dokładnie jedno <v, v''> ∈ R, takie że <v, v''> ∈ S.
-jestWyboremE(_, []).
-jestWyboremE(AEGraf, [V | Vs]) :-
-    jestWyboremEWierzcholek(AEGraf, V),
-    jestWyboremE(AEGraf, Vs).
-
-% jestWyboremEWierzcholek(Ws, V)
-% Prawda jeśli graf złożony tylko z wierzchołka V spełnia założenia
-% dotyczące E-wierzchołków jeśli całkowitym grafem jest Ws.
-jestWyboremEWierzcholek(_, V) :- wierzcholekA(V).
-jestWyboremEWierzcholek([W | _], V) :-
-    wierzcholekE(W),
-    wierzcholkiTeSame(W, V),
-    jestWyboremESprawdzWierzcholki(W, V).
-jestWyboremEWierzcholek([_ | Ws], V) :-
-    jestWyboremEWierzcholek(Ws, V).
-jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | Vs]) :-
-    W = V,
-    WType = e, VType = e,
-    length(Ws, Wlength),
-    Wlength > 0,
-    length(Vs, Vlength),
-    Vlength > 0,
-    listaIloczyn(Ws, Vs, X),
-    X = 1.
-jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
-    W = V,
-    WType = e, VType = e,
-    length(Ws, Wlength),
-    Wlength = 0.
-
 
 % jestDFS(+Graf, -Lista)
 % Prawda gdy Lista jest listą identyfikatorów
