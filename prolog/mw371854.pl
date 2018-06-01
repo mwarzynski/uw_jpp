@@ -8,9 +8,6 @@
 % Gdy dla AEgraf istnieje wiele wyborów, predykat powinien
 % odnosić wielokrotnie sukces, przynajmniej raz dla każdego wyboru.
 jestWyborem(AEGraf, Graf) :-
-    length(AEGraf, L1),
-    length(Graf, L2),
-    L1 = L2,
     jestWyboremA(AEGraf, Graf),
     jestWyboremE(AEGraf, Graf).
 
@@ -99,7 +96,10 @@ jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia w głab przy przejści
 % przez pewien graf będacy wyborem z AEgraf. W definicji tego predykatu należy jawnie
 % zbudować reprezentacje pewnego wyboru AE-grafu AEgraf.
-% jestADFS(AEGraf, Lista) :- true.
+jestADFS(AEGraf, Lista) :-
+    jestDFS(AEGraf, Lista),
+    listaDoGraf(AEGraf, Lista, Wybor),
+    jestWyborem(AEGraf, Wybor).
 
 
 % jestADFS1(+AEGraf, -Lista)
@@ -139,6 +139,13 @@ wierzcholekA([_, Typ | _]) :- Typ = a.
 % wierzcholekE(V)
 % Prawda jeśli przekazany wierzchołek jest typu A.
 wierzcholekE([_, Typ | _]) :- Typ = e.
+
+listaDoGraf(_, [], Graf) :- Graf = [].
+listaDoGraf(AEGraf, [H|T], Graf) :-
+    wierzcholekOID(AEGraf, H, V),
+    listaDoGraf(AEGraf, T, Gg),
+    append(Gg, [V], G),
+    Graf = G.
 
 % listaPorownaj(A, B)
 % Prawda, jeśli wszystkie elementy listy A są również w liście B.
