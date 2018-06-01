@@ -75,7 +75,23 @@ jestWyboremESprawdzWierzcholki([W, WType | Ws], [V, VType | _]) :-
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia
 % grafu Graf w głąb przy przejściu startujacym z pierwszego wierzchołka tego grafu
 jestDFS(_, []) :- false.
+jestDFS([G | Gs], Lista) :-
+    wierzcholekID(G, GId),
+    jestDFS2([G | Gs], [GId], [], Lista).
 
+% jestDFS2(Graf, ListaPrzejscia, Odwiedzone, Wynik)
+% Predykat pomocniczy dla jestDFS.
+jestDFS2(_, [], Odwiedzone, Wynik) :-
+    listaOdwroc(Odwiedzone, Wynik).
+jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
+    member(Id, Odwiedzone),
+    jestDFS2(Graf, Stos, Odwiedzone, Wynik).
+jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
+    not(member(Id, Odwiedzone)),
+    wierzcholekOID(Graf, Id, V),
+    wierzcholekSasiedzi(V, S),
+    append(S, Stos, NowyStos),
+    jestDFS2(Graf, NowyStos, [Id | Odwiedzone], Wynik).
 
 % jestADFS(+AEgraf, -Lista)
 % Prawda gdy Lista jest listą identyfikatorów
@@ -135,4 +151,9 @@ listaIloczyn(_, [], X) :- X is 0.
 listaIloczyn([A|As], B, X) :-
    listaIloczyn(As, B, Xx),
    ( member(A, B) -> X is Xx + 1 ; X is Xx ).
+
+listaOdwroc([], []).
+listaOdwroc([H|T],Z) :-
+    listaOdwroc(T,Z1),
+    append(Z1, [H], Z).
 
