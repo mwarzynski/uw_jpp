@@ -43,7 +43,7 @@ jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
     member(Id, Odwiedzone),
     jestDFS2(Graf, Stos, Odwiedzone, Wynik).
 jestDFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
-    not(member(Id, Odwiedzone)),
+    \+ member(Id, Odwiedzone),
     wierzcholekOID(Graf, Id, V),
     wierzcholekSasiedzi(V, S),
     permutation(S, NS),
@@ -81,7 +81,7 @@ wierzcholekSasiedzi([_, _ | Vs], Sasiedzi) :- Sasiedzi = Vs.
 listaDoGraf([], _, Graf) :- Graf = [].
 listaDoGraf([H|T], Lista, Graf) :-
     wierzcholekID(H, HId),
-    not(member(HId, Lista)),
+    \+ member(HId, Lista),
     listaDoGraf(T, Lista, Graf).
 listaDoGraf([H|T], Lista, Graf) :-
     wierzcholekID(H, HId),
