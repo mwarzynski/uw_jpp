@@ -64,7 +64,33 @@ jestADFS(AEGraf, Lista) :-
 % wierzchołków kolejno odwiedzanych przez algorytm przechodzenia w głab przy przejściu
 % przez pewien graf będacy wyborem z AEgraf. W trakcie obliczania tego predykatu
 % nie może jawnie być budowana reprezentacja wyboru AE-grafu AEgraf.
-% jestADFS1(AEGraf, Lista) :-
+jestADFS1([], []).
+jestADFS1([G | Gs], Lista) :-
+    wierzcholekID(G, GId),
+    jestADFS2([G | Gs], [GId], [], Lista).
+% jestDFS2(Graf, ListaPrzejscia, Odwiedzone, Wynik)
+% Predykat pomocniczy dla jestDFS.
+jestADFS2(_, [], Odwiedzone, Wynik) :-
+    reverse(Odwiedzone, Wynik).
+jestADFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
+    member(Id, Odwiedzone),
+    jestADFS2(Graf, Stos, Odwiedzone, Wynik).
+jestADFS2(Graf, [Id | Stos], Odwiedzone, Wynik) :-
+    \+ member(Id, Odwiedzone),
+    wierzcholekOID(Graf, Id, V),
+    wierzcholekTyp(V, Vtyp),
+    wierzcholekSasiedziADFS(Vtyp, V, S),
+    append(S, Stos, NowyStos),
+    jestADFS2(Graf, NowyStos, [Id | Odwiedzone], Wynik).
+
+wierzcholekSasiedziADFS(e, [_, _ | Vs], S) :-
+    permutation(Vs, V),
+    wezPierwszy(V, S).
+wierzcholekSasiedziADFS(a, V, S) :-
+    wierzcholekSasiedzi(V, S).
+
+wezPierwszy([], Y) :- Y = [].
+wezPierwszy([X | _], Y) :- Y = [X].
 
 % wierzcholekOID(Vs, Id, Wynik)
 % Ustawia na Wynik wierzchołek o podanym Id z listy wierzchołków Vs.
